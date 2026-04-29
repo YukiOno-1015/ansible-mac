@@ -262,6 +262,14 @@ macOS のシステム設定を変更します。
 | `macos_dock_autohide` | Dock を自動的に隠す | `true` |
 | `macos_dock_icon_size` | Dock のアイコンサイズ | `48` |
 | `macos_screenshots_dir` | スクリーンショット保存先 | `~/Desktop/screenshots` |
+| `macos_hostname_manage` | Mac の ComputerName / HostName / LocalHostName を設定する | `true` |
+| `macos_hostname_device_name` | PC 名に使うデバイス名（空なら Mac のモデルから自動判定） | `""` |
+| `macos_hostname_purpose` | PC 名に使う用途名（`dev` / `home` など） | `""` |
+| `macos_hostname_serial_suffix_length` | PC 名に付けるシリアル末尾の文字数 | `6` |
+
+PC 名は `macmini-dev-xxxxxx` や `macbook-home-xxxxxx` の形式で設定します。
+デバイス名は `hw.model` から `macmini` / `macbook` / `imac` / `macstudio` / `macpro` に自動判定します。
+`dev` プロファイルでは `dev`、`personal` プロファイルでは `home` を用途名に使います。
 
 ### git
 

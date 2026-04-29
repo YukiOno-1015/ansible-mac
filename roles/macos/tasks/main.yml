@@ -61,6 +61,73 @@
     type: string
     value: "{{ macos_screenshots_dir }}"
 
+- name: Get Mac hardware model
+  ansible.builtin.command: sysctl -n hw.model
+  register: macos_hw_model_result
+  changed_when: false
+  when: macos_hostname_manage
+
+- name: Get Mac serial number
+  ansible.builtin.shell: >
+    ioreg -rd1 -c IOPlatformExpertDevice
+    | awk -F '"' '/IOPlatformSerialNumber/ { print $4; exit }'
+  register: macos_serial_result
+  changed_when: false
+  when: macos_hostname_manage
+
+- name: Detect Mac device name
+  ansible.builtin.set_fact:
+    macos_detected_device_name: >-
+      {{
+        macos_hostname_device_name if (macos_hostname_device_name | length > 0)
+        else 'macmini' if (macos_hw_model_result.stdout | lower).startswith('macmini')
+        else 'macbook' if (macos_hw_model_result.stdout | lower).startswith('macbook')
+        else 'imac' if (macos_hw_model_result.stdout | lower).startswith('imac')
+        else 'macstudio' if (macos_hw_model_result.stdout | lower).startswith('macstudio')
+        else 'macpro' if (macos_hw_model_result.stdout | lower).startswith('macpro')
+        else 'mac'
+      }}
+  when: macos_hostname_manage
+
+- name: Build Mac host name
+  ansible.builtin.set_fact:
+    macos_generated_host_name: >-
+      {{
+        [
+          macos_detected_device_name,
+          macos_hostname_purpose,
+          (macos_serial_result.stdout | trim | lower)[
+            (macos_serial_result.stdout | trim | length) - (macos_hostname_serial_suffix_length | int):
+          ]
+        ]
+        | reject('equalto', '')
+        | join('-')
+        | lower
+        | regex_replace('[^a-z0-9-]', '-')
+        | regex_replace('-+', '-')
+        | regex_replace('^-|-$', '')
+      }}
+  when: macos_hostname_manage
+
+- name: Get current Mac host names
+  ansible.builtin.command: "scutil --get {{ item }}"
+  loop:
+    - ComputerName
+    - HostName
+    - LocalHostName
+  register: macos_current_host_names
+  changed_when: false
+  failed_when: false
+  when: macos_hostname_manage
+
+- name: Set Mac host names
+  ansible.builtin.command: "scutil --set {{ item.item }} {{ macos_generated_host_name }}"
+  loop: "{{ macos_current_host_names.results }}"
+  changed_when: item.stdout != macos_generated_host_name
+  when:
+    - macos_hostname_manage
+    - item.stdout != macos_generated_host_name
+
 - name: Restart Finder
   ansible.builtin.command: killall Finder
   ignore_errors: true

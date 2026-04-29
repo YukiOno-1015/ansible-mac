@@ -2,6 +2,8 @@
 # 普段使い用プロファイル
 # 開発用プロファイルの全てを含む + コミュニケーション・エンタメ系
 
+macos_hostname_purpose: home
+
 homebrew_casks:
   # Dev tools
   - claude-code
