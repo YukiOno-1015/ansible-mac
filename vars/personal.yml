@@ -3,6 +3,7 @@
 # 開発用プロファイルの全てを含む + コミュニケーション・エンタメ系
 
 macos_hostname_purpose: OA
+dotfiles_install_command: "./install.sh --restore-secrets"
 
 homebrew_casks:
 # Dev tools
