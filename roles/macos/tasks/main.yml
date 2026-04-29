@@ -96,9 +96,13 @@
         [
           macos_detected_device_name,
           macos_hostname_purpose,
-          (macos_serial_result.stdout | trim | lower)[
-            (macos_serial_result.stdout | trim | length) - (macos_hostname_serial_suffix_length | int):
-          ]
+          (
+            (macos_serial_result.stdout | trim | lower)
+            if (macos_hostname_serial_suffix_length | int) <= 0
+            else (macos_serial_result.stdout | trim | lower)[
+              (macos_serial_result.stdout | trim | length) - (macos_hostname_serial_suffix_length | int):
+            ]
+          )
         ]
         | reject('equalto', '')
         | join('-')

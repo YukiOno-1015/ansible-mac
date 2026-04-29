@@ -10,4 +10,4 @@ macos_screenshots_dir: "{{ ansible_env.HOME }}/Desktop/screenshots"
 macos_hostname_manage: true
 macos_hostname_device_name: ""
 macos_hostname_purpose: ""
-macos_hostname_serial_suffix_length: 6
+macos_hostname_serial_suffix_length: 0
