@@ -3,3 +3,4 @@ homebrew_packages: []
 homebrew_casks: []
 homebrew_taps: []
 homebrew_upgrade_all: false
+homebrew_java_packages: []

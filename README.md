@@ -139,6 +139,7 @@ Homebrew パッケージ・Cask をインストールします。
 | `homebrew_casks` | `brew install --cask` するアプリ一覧 | `[]` |
 | `homebrew_taps` | 追加する tap 一覧 | `[]` |
 | `homebrew_upgrade_all` | 全パッケージをアップグレードするか | `false` |
+| `homebrew_java_packages` | `jenv` に追加する OpenJDK formula 一覧 | `[]` |
 
 #### Taps
 
@@ -165,12 +166,17 @@ Homebrew パッケージ・Cask をインストールします。
 | `git` | バージョン管理 |
 | `go` | Go 言語 |
 | `helm` | Kubernetes パッケージマネージャ |
+| `jenv` | Java バージョン管理 |
 | `macmon` | Mac リソースモニタ |
 | `maven` | Java ビルドツール |
 | `mysql-client` | MySQL クライアント |
 | `nmap` | ネットワークスキャナ |
 | `node` | Node.js |
 | `nodenv` | Node.js バージョン管理 |
+| `openjdk` | 最新の OpenJDK |
+| `openjdk@8` | Java 8 |
+| `openjdk@11` | Java 11 |
+| `openjdk@17` | Java 17 |
 | `openjdk@21` | Java 21 |
 | `osx-cpu-temp` | CPU 温度モニタ |
 | `packer` | イメージビルドツール（hashicorp/tap） |
@@ -187,6 +193,11 @@ Homebrew パッケージ・Cask をインストールします。
 | `yt-dlp` | 動画ダウンロード |
 | `zabbix` | 監視エージェント |
 | `uv` | Python パッケージマネージャ |
+
+#### Java / jenv
+
+Homebrew でインストール可能な OpenJDK formula をまとめてインストールし、`jenv` に追加します。
+シェルで `jenv` を有効化する設定は dotfiles 側で管理します。
 
 #### Casks (`brew install --cask`)
 

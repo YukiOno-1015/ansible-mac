@@ -28,3 +28,22 @@
     state: present
   loop: "{{ homebrew_casks }}"
   ignore_errors: true
+
+- name: Get Homebrew prefix
+  ansible.builtin.command: brew --prefix
+  register: homebrew_prefix
+  changed_when: false
+
+- name: Add OpenJDK versions to jenv
+  ansible.builtin.command: >
+    jenv add {{ homebrew_prefix.stdout }}/opt/{{ item }}/libexec/openjdk.jdk/Contents/Home
+  loop: "{{ homebrew_java_packages }}"
+  register: homebrew_jenv_add_result
+  changed_when: >
+    'added' in homebrew_jenv_add_result.stdout
+    or 'added' in homebrew_jenv_add_result.stderr
+  failed_when: >
+    homebrew_jenv_add_result.rc != 0
+    and 'already' not in homebrew_jenv_add_result.stdout
+    and 'already' not in homebrew_jenv_add_result.stderr
+  when: homebrew_java_packages | length > 0
