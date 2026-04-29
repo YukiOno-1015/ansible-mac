@@ -32,7 +32,6 @@ homebrew_packages:
   - ripgrep
   - shfmt
   - swiftformat
-  - swiftlint
   - telnet
   - tenv
   - tree
@@ -43,11 +42,6 @@ homebrew_packages:
   - zabbix
   # Languages / Runtimes
   - go
-  - openjdk
-  - openjdk@8
-  - openjdk@11
-  - openjdk@17
-  - openjdk@21
   - uv
   # App Store CLI
   - mas
@@ -72,3 +66,7 @@ homebrew_java_packages:
   - openjdk@11
   - openjdk@17
   - openjdk@21
+
+# Xcode dependent Homebrew packages (共通)
+xcode_homebrew_packages:
+  - swiftlint

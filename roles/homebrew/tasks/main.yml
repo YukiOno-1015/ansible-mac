@@ -22,6 +22,22 @@
     state: present
     update_homebrew: true
 
+- name: Build OpenJDK package list for this Mac
+  ansible.builtin.set_fact:
+    homebrew_java_packages_for_host: >-
+      {{
+        homebrew_java_packages
+        if ansible_architecture == 'x86_64'
+        else homebrew_java_packages | reject('equalto', 'openjdk@8') | list
+      }}
+
+- name: Install OpenJDK packages
+  community.general.homebrew:
+    name: "{{ homebrew_java_packages_for_host }}"
+    state: present
+    update_homebrew: true
+  when: homebrew_java_packages_for_host | length > 0
+
 - name: Install Homebrew casks
   community.general.homebrew_cask:
     name: "{{ item }}"
@@ -37,7 +53,7 @@
 - name: Add OpenJDK versions to jenv
   ansible.builtin.command: >
     jenv add {{ homebrew_prefix.stdout }}/opt/{{ item }}/libexec/openjdk.jdk/Contents/Home
-  loop: "{{ homebrew_java_packages }}"
+  loop: "{{ homebrew_java_packages_for_host }}"
   register: homebrew_jenv_add_result
   changed_when: >
     'added' in homebrew_jenv_add_result.stdout
@@ -46,4 +62,4 @@
     homebrew_jenv_add_result.rc != 0
     and 'already' not in homebrew_jenv_add_result.stdout
     and 'already' not in homebrew_jenv_add_result.stderr
-  when: homebrew_java_packages | length > 0
+  when: homebrew_java_packages_for_host | length > 0

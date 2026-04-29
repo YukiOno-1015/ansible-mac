@@ -9,6 +9,10 @@
       tags: homebrew
     - role: mas
       tags: mas
+    - role: xcode
+      tags:
+        - homebrew
+        - xcode
     - role: macos
       tags: macos
     - role: git

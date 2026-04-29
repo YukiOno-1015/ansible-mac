@@ -1,4 +1,4 @@
-.PHONY: all init dev personal check homebrew mas macos git dotfiles npm uv help
+.PHONY: all init dev personal check homebrew mas xcode macos git dotfiles npm uv help
 
 PLAYBOOK = ansible-playbook site.yml
 
@@ -28,6 +28,7 @@ help:
 	@echo ""
 	@echo "  homebrew   Homebrew パッケージのみ"
 	@echo "  mas        App Store アプリのみ"
+	@echo "  xcode      Xcode 依存 Homebrew パッケージのみ"
 	@echo "  macos      macOS 設定のみ"
 	@echo "  git        Git 設定のみ"
 	@echo "  dotfiles   dotfiles の clone/update と install"
@@ -92,6 +93,9 @@ homebrew:
 
 mas:
 	$(PLAYBOOK) --tags mas
+
+xcode:
+	$(PLAYBOOK) --tags xcode
 
 macos:
 	$(PLAYBOOK) --tags macos

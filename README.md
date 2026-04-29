@@ -32,6 +32,7 @@ ansible-mac/
 └── roles/
     ├── homebrew/        # Homebrewパッケージ・Caskのインストール
     ├── mas/             # Mac App Storeアプリのインストール
+    ├── xcode/           # Xcode 依存 Homebrew パッケージのインストール
     ├── macos/           # macOSシステム設定
     ├── git/             # Gitグローバル設定
     └── dotfiles/        # dotfiles リポジトリの clone/update と install
@@ -98,6 +99,7 @@ make check-personal
 ```bash
 make homebrew   # Homebrew パッケージのみ
 make mas        # App Store アプリのみ
+make xcode      # Xcode 依存 Homebrew パッケージのみ
 make macos      # macOS 設定のみ
 make git        # Git 設定のみ
 make dotfiles   # dotfiles の clone/update と install
@@ -140,6 +142,7 @@ Homebrew パッケージ・Cask をインストールします。
 | `homebrew_taps` | 追加する tap 一覧 | `[]` |
 | `homebrew_upgrade_all` | 全パッケージをアップグレードするか | `false` |
 | `homebrew_java_packages` | `jenv` に追加する OpenJDK formula 一覧 | `[]` |
+| `xcode_homebrew_packages` | Xcode インストール後に `brew install` するパッケージ一覧 | `[]` |
 
 #### Taps
 
@@ -173,17 +176,11 @@ Homebrew パッケージ・Cask をインストールします。
 | `nmap` | ネットワークスキャナ |
 | `node` | Node.js |
 | `nodenv` | Node.js バージョン管理 |
-| `openjdk` | 最新の OpenJDK |
-| `openjdk@8` | Java 8 |
-| `openjdk@11` | Java 11 |
-| `openjdk@17` | Java 17 |
-| `openjdk@21` | Java 21 |
 | `osx-cpu-temp` | CPU 温度モニタ |
 | `packer` | イメージビルドツール（hashicorp/tap） |
 | `ripgrep` | 高速 grep |
 | `shfmt` | Shell スクリプトフォーマッタ |
 | `swiftformat` | Swift コードフォーマッタ |
-| `swiftlint` | Swift lint |
 | `telnet` | Telnet クライアント |
 | `tenv` | Terraform / OpenTofu バージョン管理 |
 | `tree` | ディレクトリツリー表示 |
@@ -197,7 +194,24 @@ Homebrew パッケージ・Cask をインストールします。
 #### Java / jenv
 
 Homebrew でインストール可能な OpenJDK formula をまとめてインストールし、`jenv` に追加します。
+Apple Silicon では `openjdk@8` が x86_64 専用のため、自動的に対象から外します。
 シェルで `jenv` を有効化する設定は dotfiles 側で管理します。
+
+| パッケージ | 用途 |
+| --- | --- |
+| `openjdk` | 最新の OpenJDK |
+| `openjdk@8` | Java 8（Intel Mac のみ） |
+| `openjdk@11` | Java 11 |
+| `openjdk@17` | Java 17 |
+| `openjdk@21` | Java 21 |
+
+#### Xcode dependent packages
+
+`swiftlint` のように Xcode が必要な Homebrew パッケージは、Mac App Store アプリのインストール後に入れます。
+
+| パッケージ | 用途 |
+| --- | --- |
+| `swiftlint` | Swift lint |
 
 #### Casks (`brew install --cask`)
 
