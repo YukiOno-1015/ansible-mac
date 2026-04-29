@@ -41,8 +41,17 @@ ansible-mac/
 
 ### 1. リポジトリをクローン
 
+SSH:
+
 ```bash
-git clone <repository-url>
+git clone git@github.com:YukiOno-1015/ansible-mac.git
+cd ansible-mac
+```
+
+HTTPS:
+
+```bash
+git clone https://github.com/YukiOno-1015/ansible-mac.git
 cd ansible-mac
 ```
 
