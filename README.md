@@ -182,7 +182,7 @@ GitHub Actions で次のチェックを実行します。
 
 ### pleiades
 
-Pleiades All in One の公式 DMG を `~/Downloads` に取得します。
+Pleiades All in One の公式 DMG を `curl -L` で `~/Downloads` に取得します。
 Homebrew cask では提供されていないため、DMG の取得後に Finder から開いてインストールします。
 
 | 変数 | 説明 | デフォルト |

@@ -1,9 +1,20 @@
 ---
-- name: Download Pleiades All in One DMG
-  ansible.builtin.get_url:
-    url: "{{ pleiades_url }}"
-    dest: "{{ pleiades_download_dest }}"
-    mode: "0644"
+- name: Create Pleiades download directory
+  ansible.builtin.file:
+    path: "{{ pleiades_download_dest | dirname }}"
+    state: directory
+    mode: "0755"
+  when: pleiades_enabled
+
+- name: Download Pleiades All in One DMG  # noqa: command-instead-of-module
+  ansible.builtin.command: >
+    curl
+    --fail
+    --location
+    --output {{ pleiades_download_dest | quote }}
+    {{ pleiades_url | quote }}
+  args:
+    creates: "{{ pleiades_download_dest }}"
   when:
     - pleiades_enabled
     - pleiades_url | length > 0
