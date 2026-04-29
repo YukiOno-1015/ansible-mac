@@ -107,6 +107,50 @@ make npm        # npm グローバルパッケージのみ
 make uv         # uv ツールのみ
 ```
 
+## 実行時メモ
+
+### Homebrew Cask で sudo が必要な場合
+
+`docker-desktop` や `webex-meetings` など、一部の cask はインストール中に `sudo` を呼びます。
+Ansible 経由では sudo のパスワード入力ができず、次のようなエラーになることがあります。
+
+```text
+sudo: a terminal is required to read the password
+sudo: a password is required
+```
+
+その場合は、先に sudo 認証を通してから再実行します。
+
+```bash
+sudo -v
+make personal
+```
+
+それでも失敗する場合は、該当 cask だけ対話的に入れてから再実行します。
+
+```bash
+brew install --cask docker-desktop webex-meetings
+make personal
+```
+
+### Mac App Store アプリのインストールに失敗する場合
+
+`mas` は App Store へのサインインと、対象アプリが Apple ID の購入済み/入手済みであることが必要です。
+次のような空のエラーで落ちる場合は、App Store 側の状態を確認します。
+
+```text
+Error running command 'install' on app '<app-id>':
+```
+
+確認すること:
+
+- App Store アプリを開いてサインインしていること
+- 初回利用規約や支払い情報の確認が残っていないこと
+- 対象アプリを一度 App Store GUI で「入手」していること
+- `mas account` で Apple ID が表示されること
+
+状態を直したら、`make mas` または `make personal` を再実行します。
+
 ## プロファイル
 
 | | 開発用 (`dev`) | 普段使い (`personal`) |
