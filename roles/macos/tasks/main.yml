@@ -1,0 +1,72 @@
+---
+- name: Show hidden files in Finder
+  community.general.osx_defaults:
+    domain: com.apple.finder
+    key: AppleShowAllFiles
+    type: bool
+    value: "{{ macos_show_hidden_files }}"
+
+- name: Show all filename extensions in Finder
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: AppleShowAllExtensions
+    type: bool
+    value: "{{ macos_show_all_filename_extensions }}"
+
+- name: Disable auto-correct
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: NSAutomaticSpellingCorrectionEnabled
+    type: bool
+    value: "{{ macos_disable_auto_correct | bool | ternary(false, true) }}"
+
+- name: Set key repeat rate
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: KeyRepeat
+    type: int
+    value: "{{ macos_key_repeat_rate }}"
+
+- name: Set key repeat delay
+  community.general.osx_defaults:
+    domain: NSGlobalDomain
+    key: InitialKeyRepeat
+    type: int
+    value: "{{ macos_key_repeat_delay }}"
+
+- name: Set Dock to autohide
+  community.general.osx_defaults:
+    domain: com.apple.dock
+    key: autohide
+    type: bool
+    value: "{{ macos_dock_autohide }}"
+
+- name: Set Dock icon size
+  community.general.osx_defaults:
+    domain: com.apple.dock
+    key: tilesize
+    type: int
+    value: "{{ macos_dock_icon_size }}"
+
+- name: Create screenshots directory
+  ansible.builtin.file:
+    path: "{{ macos_screenshots_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Set screenshot save location
+  community.general.osx_defaults:
+    domain: com.apple.screencapture
+    key: location
+    type: string
+    value: "{{ macos_screenshots_dir }}"
+
+- name: Restart Finder
+  ansible.builtin.command: killall Finder
+  ignore_errors: true
+  changed_when: false
+
+- name: Restart Dock
+  ansible.builtin.command: killall Dock
+  ignore_errors: true
+  changed_when: false

@@ -1,0 +1,9 @@
+---
+macos_show_hidden_files: true
+macos_show_all_filename_extensions: true
+macos_disable_auto_correct: true
+macos_key_repeat_rate: 2
+macos_key_repeat_delay: 15
+macos_dock_autohide: true
+macos_dock_icon_size: 48
+macos_screenshots_dir: "{{ ansible_env.HOME }}/Desktop/screenshots"

@@ -1,0 +1,61 @@
+---
+# Homebrew taps (共通)
+homebrew_taps:
+  - hashicorp/tap
+
+# Homebrew packages (共通 - CLI tools / Languages / Runtimes)
+homebrew_packages:
+  # CLI tools
+  - act
+  - actionlint
+  - ansible
+  - argocd
+  - automake
+  - bat
+  - cmake
+  - curl
+  - dos2unix
+  - eza
+  - ffmpeg
+  - gh
+  - git
+  - helm
+  - macmon
+  - maven
+  - mysql-client
+  - nmap
+  - node
+  - nodenv
+  - osx-cpu-temp
+  - packer
+  - ripgrep
+  - shfmt
+  - swiftformat
+  - swiftlint
+  - telnet
+  - tenv
+  - tree
+  - vim
+  - wget
+  - xcodegen
+  - yt-dlp
+  - zabbix
+  # Languages / Runtimes
+  - go
+  - openjdk@21
+  - uv
+  # App Store CLI
+  - mas
+
+# Git configuration (共通)
+git_user_name: "YukiOno-1015"
+git_user_email: "sk4869pw4869@gmail.com"
+git_default_branch: main
+git_core_editor: vim
+
+# dotfiles configuration (共通)
+dotfiles_repo: "https://github.com/YukiOno-1015/dotfiles.git"
+dotfiles_dest: "{{ ansible_env.HOME }}/dotfiles"
+dotfiles_version: main
+dotfiles_update: true
+dotfiles_install_command: "./install.sh"

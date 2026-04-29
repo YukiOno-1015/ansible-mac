@@ -1,0 +1,6 @@
+---
+dotfiles_repo: "https://github.com/YukiOno-1015/dotfiles.git"
+dotfiles_dest: "{{ ansible_env.HOME }}/dotfiles"
+dotfiles_version: main
+dotfiles_update: true
+dotfiles_install_command: "./install.sh"

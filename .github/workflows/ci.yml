@@ -1,0 +1,54 @@
+---
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: Format, Indent, Static Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install Ansible tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ansible ansible-lint yamllint
+
+      - name: Install shfmt
+        run: go install mvdan.cc/sh/v3/cmd/shfmt@latest
+
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Check YAML formatting and indentation
+        run: yamllint .
+
+      - name: Check shell formatting
+        run: |
+          files="$(git ls-files '*.sh')"
+          if [ -n "${files}" ]; then
+            shfmt -d -i 2 -ci ${files}
+          fi
+
+      - name: Run Ansible static checks
+        run: ansible-lint
+
+      - name: Run Ansible syntax check
+        run: ansible-playbook site.yml --syntax-check

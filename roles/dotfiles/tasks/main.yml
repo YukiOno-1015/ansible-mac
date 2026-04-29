@@ -1,0 +1,17 @@
+---
+- name: Clone dotfiles repository
+  ansible.builtin.git:
+    repo: "{{ dotfiles_repo }}"
+    dest: "{{ dotfiles_dest }}"
+    version: "{{ dotfiles_version }}"
+    update: "{{ dotfiles_update }}"
+
+- name: Run dotfiles install command
+  ansible.builtin.command: "{{ dotfiles_install_command }}"
+  args:
+    chdir: "{{ dotfiles_dest }}"
+  register: dotfiles_install_result
+  changed_when: >
+    'リンク作成:' in dotfiles_install_result.stdout
+    or 'バックアップ:' in dotfiles_install_result.stdout
+  when: dotfiles_install_command | length > 0

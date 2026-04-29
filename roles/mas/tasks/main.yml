@@ -1,0 +1,6 @@
+---
+- name: Install App Store apps
+  community.general.mas:
+    id: "{{ item.id }}"
+    state: present
+  loop: "{{ mas_apps }}"
