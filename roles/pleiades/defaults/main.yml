@@ -1,0 +1,4 @@
+---
+pleiades_enabled: false
+pleiades_url: ""
+pleiades_download_dest: "{{ ansible_env.HOME }}/Downloads/pleiades-all-in-one.dmg"

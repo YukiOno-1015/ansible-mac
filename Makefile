@@ -1,4 +1,4 @@
-.PHONY: all init dev personal check homebrew mas xcode macos git dotfiles npm uv help
+.PHONY: all init dev personal check homebrew mas xcode pleiades macos git dotfiles import-settings npm uv help
 
 PLAYBOOK = ansible-playbook site.yml
 
@@ -29,9 +29,11 @@ help:
 	@echo "  homebrew   Homebrew パッケージのみ"
 	@echo "  mas        App Store アプリのみ"
 	@echo "  xcode      Xcode 依存 Homebrew パッケージのみ"
+	@echo "  pleiades   Pleiades All in One DMG の取得のみ"
 	@echo "  macos      macOS 設定のみ"
 	@echo "  git        Git 設定のみ"
 	@echo "  dotfiles   dotfiles の clone/update と install"
+	@echo "  import-settings 現環境のアプリ設定を dotfiles に取り込み"
 	@echo "  npm        npm グローバルパッケージのみ"
 	@echo "  uv         uv ツールのみ"
 
@@ -97,6 +99,9 @@ mas:
 xcode:
 	$(PLAYBOOK) --tags xcode
 
+pleiades:
+	$(PLAYBOOK) --tags pleiades
+
 macos:
 	$(PLAYBOOK) --tags macos
 
@@ -105,6 +110,9 @@ git:
 
 dotfiles:
 	$(PLAYBOOK) --tags dotfiles
+
+import-settings:
+	scripts/import-app-settings.sh
 
 npm:
 	@echo "==> Installing npm global packages..."

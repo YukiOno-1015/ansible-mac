@@ -22,6 +22,8 @@ ansible-mac/
 ├── ansible.cfg          # Ansible設定
 ├── requirements.yml     # Ansible collection 依存関係
 ├── site.yml             # メインplaybook
+├── scripts/
+│   └── import-app-settings.sh # 現環境のアプリ設定取り込み
 ├── inventory/
 │   └── localhost        # ローカル実行用インベントリ
 ├── vars/
@@ -33,6 +35,7 @@ ansible-mac/
     ├── homebrew/        # Homebrewパッケージ・Caskのインストール
     ├── mas/             # Mac App Storeアプリのインストール
     ├── xcode/           # Xcode 依存 Homebrew パッケージのインストール
+    ├── pleiades/        # Pleiades All in One DMG の取得
     ├── macos/           # macOSシステム設定
     ├── git/             # Gitグローバル設定
     └── dotfiles/        # dotfiles リポジトリの clone/update と install
@@ -100,9 +103,11 @@ make check-personal
 make homebrew   # Homebrew パッケージのみ
 make mas        # App Store アプリのみ
 make xcode      # Xcode 依存 Homebrew パッケージのみ
+make pleiades   # Pleiades All in One DMG の取得のみ
 make macos      # macOS 設定のみ
 make git        # Git 設定のみ
 make dotfiles   # dotfiles の clone/update と install
+make import-settings # 現環境のアプリ設定を dotfiles に取り込み
 make npm        # npm グローバルパッケージのみ
 make uv         # uv ツールのみ
 ```
@@ -174,6 +179,42 @@ GitHub Actions で次のチェックを実行します。
 | `ansible-playbook --syntax-check` | Playbook の構文チェック |
 
 ## ロール詳細
+
+### pleiades
+
+Pleiades All in One の公式 DMG を `~/Downloads` に取得します。
+Homebrew cask では提供されていないため、DMG の取得後に Finder から開いてインストールします。
+
+| 変数 | 説明 | デフォルト |
+|------|------|-----------|
+| `pleiades_enabled` | Pleiades DMG を取得するか | `false` |
+| `pleiades_url` | Pleiades All in One DMG の URL | `""` |
+| `pleiades_download_dest` | DMG の保存先 | `~/Downloads/pleiades-all-in-one.dmg` |
+
+既定では Pleiades All in One 2025 Java Full Edition for Mac ARM を取得します。
+公式ページでは Mac 版 All in One と Pleiades プラグインが提供されています。
+
+FileZilla は現在の Homebrew cask では見つからなかったため、この playbook では自動導入していません。
+必要な場合は公式サイトからインストールし、設定だけ `make import-settings` で dotfiles に取り込みます。
+
+### import-settings
+
+現環境のアプリ設定を `~/dotfiles/home/...` に取り込みます。
+Thunderbird のパスワード DB、証明書 DB、メール本体、VS Code の `globalStorage` など、秘密情報や巨大な生成物は取り込みません。
+
+```bash
+make dotfiles
+make import-settings
+```
+
+取り込み対象:
+
+| アプリ | 対象 |
+| --- | --- |
+| VS Code | `settings.json`, `keybindings.json`, `tasks.json`, `snippets/`, `prompts/` |
+| Thunderbird | `profiles.ini`, `installs.ini`, `prefs.js`, `handlers.json`, `xulstore.json` |
+| FileZilla | `~/.config/filezilla/`, `org.filezilla-project.filezilla.plist` |
+| Eclipse / Pleiades | 軽量な Preferences |
 
 ### homebrew
 

@@ -70,3 +70,8 @@ homebrew_java_packages:
 # Xcode dependent Homebrew packages (共通)
 xcode_homebrew_packages:
   - swiftlint
+
+# Pleiades All in One (共通)
+pleiades_enabled: true
+pleiades_url: "https://ftp.jaist.ac.jp/pub/mergedoc/pleiades/2025/pleiades-2025-12-java-mac-jre_20260117.dmg"
+pleiades_download_dest: "{{ ansible_env.HOME }}/Downloads/pleiades-2025-12-java-mac-jre_20260117.dmg"
