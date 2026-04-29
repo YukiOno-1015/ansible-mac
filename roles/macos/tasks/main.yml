@@ -69,8 +69,7 @@
 
 - name: Get Mac serial number
   ansible.builtin.shell: >
-    ioreg -rd1 -c IOPlatformExpertDevice
-    | awk -F '"' '/IOPlatformSerialNumber/ { print $4; exit }'
+    ioreg -rd1 -c IOPlatformExpertDevice | awk -F '"' '/IOPlatformSerialNumber/ { print $4; exit }'
   register: macos_serial_result
   changed_when: false
   when: macos_hostname_manage
@@ -80,12 +79,12 @@
     macos_detected_device_name: >-
       {{
         macos_hostname_device_name if (macos_hostname_device_name | length > 0)
-        else 'macmini' if (macos_hw_model_result.stdout | lower).startswith('macmini')
-        else 'macbook' if (macos_hw_model_result.stdout | lower).startswith('macbook')
-        else 'imac' if (macos_hw_model_result.stdout | lower).startswith('imac')
-        else 'macstudio' if (macos_hw_model_result.stdout | lower).startswith('macstudio')
-        else 'macpro' if (macos_hw_model_result.stdout | lower).startswith('macpro')
-        else 'mac'
+        else 'MACM' if (macos_hw_model_result.stdout | lower).startswith('macmini')
+        else 'MACB' if (macos_hw_model_result.stdout | lower).startswith('macbook')
+        else 'IMAC' if (macos_hw_model_result.stdout | lower).startswith('imac')
+        else 'MACS' if (macos_hw_model_result.stdout | lower).startswith('macstudio')
+        else 'MACP' if (macos_hw_model_result.stdout | lower).startswith('macpro')
+        else 'MAC'
       }}
   when: macos_hostname_manage
 
@@ -97,28 +96,26 @@
           macos_detected_device_name,
           macos_hostname_purpose,
           (
-            (macos_serial_result.stdout | trim | lower)
+            (macos_serial_result.stdout | trim | upper)
             if (macos_hostname_serial_suffix_length | int) <= 0
-            else (macos_serial_result.stdout | trim | lower)[
+            else (macos_serial_result.stdout | trim | upper)[
               (macos_serial_result.stdout | trim | length) - (macos_hostname_serial_suffix_length | int):
             ]
           )
         ]
         | reject('equalto', '')
-        | join('-')
-        | lower
-        | regex_replace('[^a-z0-9-]', '-')
-        | regex_replace('-+', '-')
-        | regex_replace('^-|-$', '')
+        | join('')
+        | upper
+        | regex_replace('[^A-Z0-9]', '')
       }}
   when: macos_hostname_manage
 
 - name: Get current Mac host names
   ansible.builtin.command: "scutil --get {{ item }}"
   loop:
-    - ComputerName
-    - HostName
-    - LocalHostName
+  - ComputerName
+  - HostName
+  - LocalHostName
   register: macos_current_host_names
   changed_when: false
   failed_when: false
@@ -129,8 +126,8 @@
   loop: "{{ macos_current_host_names.results }}"
   changed_when: item.stdout != macos_generated_host_name
   when:
-    - macos_hostname_manage
-    - item.stdout != macos_generated_host_name
+  - macos_hostname_manage
+  - item.stdout != macos_generated_host_name
 
 - name: Restart Finder
   ansible.builtin.command: killall Finder

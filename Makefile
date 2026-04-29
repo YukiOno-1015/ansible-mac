@@ -1,6 +1,7 @@
 .PHONY: all init dev personal check homebrew mas xcode pleiades macos git dotfiles import-settings npm uv help
 
 PLAYBOOK = ansible-playbook site.yml
+PLAYBOOK_BECOME = ansible-playbook --ask-become-pass site.yml
 
 # npm global packages
 NPM_PACKAGES = \
@@ -75,12 +76,14 @@ init:
 	@echo "==> init complete"
 
 dev:
-	$(PLAYBOOK) -e @vars/dev.yml
+	@$(MAKE) ensure-not-root
+	$(PLAYBOOK_BECOME) -e @vars/dev.yml
 	$(MAKE) npm
 	$(MAKE) uv
 
 personal:
-	$(PLAYBOOK) -e @vars/personal.yml
+	@$(MAKE) ensure-not-root
+	$(PLAYBOOK_BECOME) -e @vars/personal.yml
 	$(MAKE) npm
 	$(MAKE) uv
 
@@ -91,13 +94,12 @@ check-personal:
 	$(PLAYBOOK) -e @vars/personal.yml --check
 
 homebrew:
+	@$(MAKE) ensure-not-root
 	$(PLAYBOOK) --tags homebrew
 
 mas:
+	@$(MAKE) ensure-not-root
 	$(PLAYBOOK) --tags mas
-
-xcode:
-	$(PLAYBOOK) --tags xcode
 
 pleiades:
 	$(PLAYBOOK) --tags pleiades
@@ -129,3 +131,9 @@ uv:
 			&& echo "  already installed: $$tool" \
 			|| uv tool install $$tool; \
 	done
+
+ensure-not-root:
+	@if [ "$$(id -u)" = "0" ]; then \
+		echo "Do not run this Makefile with sudo. Homebrew must run as your normal user."; \
+		exit 1; \
+	fi

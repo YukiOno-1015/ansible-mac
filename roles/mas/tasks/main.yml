@@ -1,6 +1,13 @@
 ---
-- name: Install App Store apps
-  community.general.mas:
-    id: "{{ item.id }}"
-    state: present
+- name: Install free App Store apps
+  ansible.builtin.command:
+    cmd: "mas get {{ item.id }}"
+  register: mas_get_result
+  changed_when: mas_get_result.rc == 0
+  failed_when:
+  - mas_get_result.rc != 0
+  - "'sudo: a password is required' not in mas_get_result.stderr"
+  when: not ansible_check_mode
   loop: "{{ mas_apps }}"
+  loop_control:
+    label: "{{ item.name }} ({{ item.id }})"
