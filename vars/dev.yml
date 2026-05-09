@@ -1,45 +1,60 @@
 ---
 # 開発用プロファイル
-# コミュニケーションツール・エンタメ系は含まない
+# 共通セット（group_vars/all.yml）+ 開発系 CLI / Cask / MAS / Java / Xcode / Pleiades
 
 macos_hostname_purpose: DEV
 
-homebrew_casks:
-# Dev tools
-- claude-code
-- visual-studio-code
-- docker
-- docker-desktop
-- github-copilot-for-xcode
-- iterm2
-- postman
-- sourcetree
-- wezterm@nightly
-# Browsers
-- google-chrome
-# Utilities
-- qview
-- vlc
-# Fonts
-- font-hack-nerd-font
-- font-hackgen
-- font-hackgen-nerd
-- font-jetbrains-mono
+homebrew_taps:
+  - hashicorp/tap
 
-mas_apps:
-- id: 640199958
-  name: "Developer"
-- id: 1218781096
-  name: "LanguageTranslator"
-- id: 1624835354
-  name: "PL2303Serial"
-- id: 1475387142
-  name: "Tailscale"
-- id: 899247664
-  name: "TestFlight"
-- id: 1451685025
-  name: "WireGuard"
-- id: 1295203466
-  name: "Windows App"
-- id: 497799835
-  name: "Xcode"
+homebrew_packages: "{{ homebrew_packages_common + homebrew_packages_dev_extra }}"
+homebrew_packages_dev_extra:
+  # GitHub Actions / CI
+  - act
+  - actionlint
+  - gh
+  # クラウド / k8s / IaC
+  - argocd
+  - helm
+  - packer
+  - tenv
+  # ビルド / 言語ツール（node / nodenv / jenv / uv は共通へ移動済み）
+  - automake
+  - cmake
+  - go
+  - maven
+  # DB / ネットワーク
+  - mysql-client
+  - nmap
+  # フォーマッタ / Lint
+  - shfmt
+  - swiftformat
+  # iOS / Xcode 関連
+  - xcodegen
+  # 監視
+  - zabbix
+
+xcode_homebrew_packages:
+  - swiftlint
+
+pleiades_enabled: true
+
+homebrew_casks: "{{ homebrew_casks_common + homebrew_casks_dev_extra }}"
+homebrew_casks_dev_extra:
+  - claude-code
+  - docker
+  - docker-desktop
+  - github-copilot-for-xcode
+  - postman
+  - sourcetree
+
+mas_apps: "{{ mas_apps_common + mas_apps_dev_extra }}"
+mas_apps_dev_extra:
+  - id: 640199958
+    name: "Developer"
+  - id: 1624835354
+    name: "PL2303Serial"
+  - id: 899247664
+    name: "TestFlight"
+  - id: 497799835
+    name: "Xcode"

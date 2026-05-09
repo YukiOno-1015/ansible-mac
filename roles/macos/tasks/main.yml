@@ -129,6 +129,18 @@
   - macos_hostname_manage
   - item.stdout != macos_generated_host_name
 
+- name: Manage internal *.sk4869.info entries in /etc/hosts
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} ANSIBLE MANAGED: internal sk4869.info"
+    block: |
+      {% for fqdn in macos_internal_dns_entries %}
+      {{ macos_internal_dns_vip }}  {{ fqdn }}
+      {% endfor %}
+    create: false
+  become: true
+  when: macos_internal_dns_entries | length > 0
+
 - name: Restart Finder
   ansible.builtin.command: killall Finder
   ignore_errors: true

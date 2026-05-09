@@ -1,56 +1,26 @@
 ---
 # 普段使い用プロファイル
-# 開発用プロファイルの全てを含む + コミュニケーション・エンタメ系
+# 共通セット（group_vars/all.yml）+ コミュニケーション / エンタメ系のみ
+# 開発系 CLI / Cask / MAS / Java / Xcode / Pleiades は dev プロファイルに統一
 
 macos_hostname_purpose: OA
 dotfiles_install_command: "./install.sh --restore-secrets"
 
-homebrew_casks:
-# Dev tools
-- claude-code
-- visual-studio-code
-- docker
-- docker-desktop
-- github-copilot-for-xcode
-- iterm2
-- postman
-- sourcetree
-- wezterm@nightly
-# Browsers
-- google-chrome
-# Communication
-- discord
-- slack
-- thunderbird
-- webex
-- webex-meetings
-# Utilities
-- qview
-- vlc
-# Fonts
-- font-hack-nerd-font
-- font-hackgen
-- font-hackgen-nerd
-- font-jetbrains-mono
+# 普段使い専用の追加パッケージは無し（共通セットのみ使用）
+# homebrew_packages は group_vars のデフォルト（homebrew_packages_common）を使用
 
-mas_apps:
-- id: 640199958
-  name: "Developer"
-- id: 302584613
-  name: "Kindle"
-- id: 1218781096
-  name: "LanguageTranslator"
-- id: 539883307
-  name: "LINE"
-- id: 1624835354
-  name: "PL2303Serial"
-- id: 1475387142
-  name: "Tailscale"
-- id: 899247664
-  name: "TestFlight"
-- id: 1295203466
-  name: "Windows App"
-- id: 1451685025
-  name: "WireGuard"
-- id: 497799835
-  name: "Xcode"
+homebrew_casks: "{{ homebrew_casks_common + homebrew_casks_personal_extra }}"
+homebrew_casks_personal_extra:
+  # コミュニケーション
+  - discord
+  - slack
+  - thunderbird
+  - webex
+  - webex-meetings
+
+mas_apps: "{{ mas_apps_common + mas_apps_personal_extra }}"
+mas_apps_personal_extra:
+  - id: 302584613
+    name: "Kindle"
+  - id: 539883307
+    name: "LINE"

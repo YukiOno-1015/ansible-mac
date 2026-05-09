@@ -1,0 +1,4 @@
+---
+filezilla_enabled: false
+filezilla_url: ""
+filezilla_download_dest: "{{ ansible_env.HOME }}/Downloads/filezilla-macos.tar.bz2"

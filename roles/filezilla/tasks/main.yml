@@ -1,0 +1,20 @@
+---
+- name: Create FileZilla download directory
+  ansible.builtin.file:
+    path: "{{ filezilla_download_dest | dirname }}"
+    state: directory
+    mode: "0755"
+  when: filezilla_enabled
+
+- name: Download FileZilla client archive  # noqa: command-instead-of-module
+  ansible.builtin.command: >
+    curl
+    --fail
+    --location
+    --output {{ filezilla_download_dest | quote }}
+    {{ filezilla_url | quote }}
+  args:
+    creates: "{{ filezilla_download_dest }}"
+  when:
+    - filezilla_enabled
+    - filezilla_url | length > 0

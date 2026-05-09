@@ -15,6 +15,8 @@
         - xcode
     - role: pleiades
       tags: pleiades
+    - role: filezilla
+      tags: filezilla
     - role: macos
       tags: macos
     - role: git

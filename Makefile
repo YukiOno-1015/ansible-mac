@@ -1,4 +1,4 @@
-.PHONY: all init dev personal check homebrew mas xcode pleiades macos git dotfiles import-settings npm uv help
+.PHONY: all init dev personal check homebrew mas xcode pleiades filezilla macos git dotfiles import-settings npm uv help
 
 PLAYBOOK = ansible-playbook site.yml
 PLAYBOOK_BECOME = ansible-playbook --ask-become-pass site.yml
@@ -22,8 +22,8 @@ help:
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "  init       前提条件（Homebrew / Ansible）をセットアップ"
-	@echo "  dev        開発用セットアップ（コミュニケーションツールなし）"
-	@echo "  personal   普段使い用セットアップ（全部入り）"
+	@echo "  dev        開発用セットアップ（開発ツール / 言語 SDK / Pleiades など）"
+	@echo "  personal   普段使い用セットアップ（コミュニケーション / エンタメ中心、開発ツールなし）"
 	@echo "  check-dev      開発用 ドライラン"
 	@echo "  check-personal 普段使い用 ドライラン"
 	@echo ""
@@ -31,6 +31,7 @@ help:
 	@echo "  mas        App Store アプリのみ"
 	@echo "  xcode      Xcode 依存 Homebrew パッケージのみ"
 	@echo "  pleiades   Pleiades All in One DMG の取得のみ"
+	@echo "  filezilla  FileZilla アーカイブの取得のみ"
 	@echo "  macos      macOS 設定のみ"
 	@echo "  git        Git 設定のみ"
 	@echo "  dotfiles   dotfiles の clone/update と install"
@@ -84,8 +85,6 @@ dev:
 personal:
 	@$(MAKE) ensure-not-root
 	$(PLAYBOOK_BECOME) -e @vars/personal.yml
-	$(MAKE) npm
-	$(MAKE) uv
 
 check-dev:
 	$(PLAYBOOK) -e @vars/dev.yml --check
@@ -104,8 +103,12 @@ mas:
 pleiades:
 	$(PLAYBOOK) --tags pleiades
 
+filezilla:
+	$(PLAYBOOK) --tags filezilla
+
 macos:
-	$(PLAYBOOK) --tags macos
+	@$(MAKE) ensure-not-root
+	$(PLAYBOOK_BECOME) --tags macos
 
 git:
 	$(PLAYBOOK) --tags git

@@ -1,66 +1,95 @@
 ---
-# Homebrew taps (共通)
-homebrew_taps:
-  - hashicorp/tap
+# 共通 Homebrew taps（dev のみ追加する想定。普段使いではタップ不要）
+homebrew_taps: []
 
-# Homebrew packages (共通 - CLI tools / Languages / Runtimes)
-homebrew_packages:
-  # CLI tools
-  - act
-  - actionlint
-  - ansible
-  - argocd
-  - automake
+# 共通 Homebrew packages（普段使いでも使う互換 CLI / 一般用途 / この ansible 環境用）
+homebrew_packages_common:
+  # 互換 CLI / 一般 CLI
   - bat
-  - cmake
-  - curl
-  - dos2unix
   - eza
-  - ffmpeg
-  - gh
-  - git
-  - helm
-  - jenv
-  - macmon
-  - maven
-  - mysql-client
-  - nmap
-  - node
-  - nodenv
-  - osx-cpu-temp
-  - packer
-  - vault
   - ripgrep
-  - shfmt
-  - swiftformat
-  - telnet
-  - tenv
   - tree
   - vim
   - wget
-  - xcodegen
+  - curl
+  - dos2unix
+  - macmon
+  - osx-cpu-temp
+  - telnet
+  - ffmpeg
   - yt-dlp
-  - zabbix
-  # Languages / Runtimes
-  - go
-  - uv
+  # この ansible 環境を反映するため
+  - ansible
+  - git
+  # dotfiles の secrets restore で使用
+  - vault
   # App Store CLI
   - mas
+  # 言語ランタイム / バージョン管理（普段使いでもスクリプト実行などで利用）
+  - node
+  - nodenv
+  - jenv
+  - uv
 
-# Git configuration (共通)
+# プロファイル未指定時のデフォルト
+homebrew_packages: "{{ homebrew_packages_common }}"
+
+# 共通 Homebrew casks（普段使いでも使うフォント / ターミナル / エディタ / ブラウザ / Office365）
+homebrew_casks_common:
+  # この環境を反映できるエディタ
+  - visual-studio-code
+  # ターミナル（iTerm2 は廃止し wezterm に完全移行）
+  - wezterm@nightly
+  # ブラウザ
+  - google-chrome
+  # 一般用途ユーティリティ
+  - qview
+  - vlc
+  # Microsoft Office 365
+  - microsoft-word
+  - microsoft-excel
+  - microsoft-powerpoint
+  - microsoft-outlook
+  - microsoft-onenote
+  - microsoft-teams
+  - microsoft-onedrive
+  # フォント
+  - font-hack-nerd-font
+  - font-hackgen
+  - font-hackgen-nerd
+  - font-jetbrains-mono
+
+# プロファイル未指定時のデフォルト
+homebrew_casks: "{{ homebrew_casks_common }}"
+
+# 共通 Mac App Store アプリ
+mas_apps_common:
+  - id: 1218781096
+    name: "LanguageTranslator"
+  - id: 1475387142
+    name: "Tailscale"
+  - id: 1295203466
+    name: "Windows App"
+  - id: 1451685025
+    name: "WireGuard"
+
+# プロファイル未指定時のデフォルト
+mas_apps: "{{ mas_apps_common }}"
+
+# Git configuration（共通）
 git_user_name: "YukiOno-1015"
 git_user_email: "sk4869pw4869@gmail.com"
 git_default_branch: main
 git_core_editor: vim
 
-# dotfiles configuration (共通)
+# dotfiles configuration（共通）
 dotfiles_repo: "https://github.com/YukiOno-1015/dotfiles.git"
 dotfiles_dest: "{{ ansible_env.HOME }}/dotfiles"
 dotfiles_version: main
 dotfiles_update: true
 dotfiles_install_command: "./install.sh"
 
-# Java configuration (共通)
+# Java（OpenJDK）は共通。普段使いでも JVM アプリ実行や jenv 管理で必要。
 homebrew_java_packages:
   - openjdk
   - openjdk@8
@@ -68,11 +97,17 @@ homebrew_java_packages:
   - openjdk@17
   - openjdk@21
 
-# Xcode dependent Homebrew packages (共通)
-xcode_homebrew_packages:
-  - swiftlint
+# Xcode 依存 Homebrew packages は dev 専用
+xcode_homebrew_packages: []
 
-# Pleiades All in One (共通)
-pleiades_enabled: true
+# Pleiades は dev 専用
+pleiades_enabled: false
 pleiades_url: "https://ftp.jaist.ac.jp/pub/mergedoc/pleiades/2025/pleiades-2025-12-java-mac-jre_20260117.dmg"
 pleiades_download_dest: "{{ ansible_env.HOME }}/Downloads/pleiades-2025-12-java-mac-jre_20260117.dmg"
+
+# FileZilla（共通）— Homebrew cask に無いため Pleiades と同じく公式アーカイブを DL
+# 新しい版が出たらここの version 値を差し替える（公式: https://filezilla-project.org/download.php?platform=macos-arm64）
+filezilla_enabled: true
+filezilla_version: "3.70.4"
+filezilla_url: "https://download.filezilla-project.org/client/FileZilla_{{ filezilla_version }}_macos-arm64.app.tar.bz2"
+filezilla_download_dest: "{{ ansible_env.HOME }}/Downloads/FileZilla_{{ filezilla_version }}_macos-arm64.app.tar.bz2"
