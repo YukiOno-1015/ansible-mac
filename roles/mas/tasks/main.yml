@@ -5,8 +5,8 @@
   register: mas_get_result
   changed_when: mas_get_result.rc == 0
   failed_when:
-  - mas_get_result.rc != 0
-  - "'sudo: a password is required' not in mas_get_result.stderr"
+    - mas_get_result.rc != 0
+    - "'sudo: a password is required' not in mas_get_result.stderr"
   when: not ansible_check_mode
   loop: "{{ mas_apps }}"
   loop_control:

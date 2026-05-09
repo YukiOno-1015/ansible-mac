@@ -113,9 +113,9 @@
 - name: Get current Mac host names
   ansible.builtin.command: "scutil --get {{ item }}"
   loop:
-  - ComputerName
-  - HostName
-  - LocalHostName
+    - ComputerName
+    - HostName
+    - LocalHostName
   register: macos_current_host_names
   changed_when: false
   failed_when: false
@@ -126,8 +126,8 @@
   loop: "{{ macos_current_host_names.results }}"
   changed_when: item.stdout != macos_generated_host_name
   when:
-  - macos_hostname_manage
-  - item.stdout != macos_generated_host_name
+    - macos_hostname_manage
+    - item.stdout != macos_generated_host_name
 
 - name: Manage internal *.sk4869.info entries in /etc/hosts
   ansible.builtin.blockinfile:
