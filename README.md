@@ -27,15 +27,16 @@ ansible-mac/
 ├── inventory/
 │   └── localhost        # ローカル実行用インベントリ
 ├── vars/
-│   ├── dev.yml          # 開発用プロファイル（Casks / MAS apps）
-│   └── personal.yml     # 普段使い用プロファイル（Casks / MAS apps）
+│   ├── dev.yml          # 開発用プロファイル（dev 専用 packages / Casks / MAS apps）
+│   └── personal.yml     # 普段使い用プロファイル（コミュニケーション / エンタメ）
 ├── group_vars/
-│   └── all.yml          # 共通変数（Homebrew packages / Git設定）
+│   └── all.yml          # 共通変数（共通 packages / Casks / MAS / Git設定）
 └── roles/
     ├── homebrew/        # Homebrewパッケージ・Caskのインストール
     ├── mas/             # Mac App Storeアプリのインストール
     ├── xcode/           # Xcode 依存 Homebrew パッケージのインストール
     ├── pleiades/        # Pleiades All in One DMG の取得
+    ├── filezilla/       # FileZilla 公式アーカイブの取得
     ├── macos/           # macOSシステム設定
     ├── git/             # Gitグローバル設定
     └── dotfiles/        # dotfiles リポジトリの clone/update と install
@@ -86,8 +87,8 @@ git_user_email: "your@email.com"
 
 ```bash
 make init       # 前提条件（Homebrew / Ansible）をセットアップ
-make dev        # 開発用（コミュニケーションツールなし）
-make personal   # 普段使い用（全部入り）
+make dev        # 開発用（開発ツール + 共通セット）
+make personal   # 普段使い用（コミュニケーション/エンタメ + 共通セット、開発ツールなし）
 ```
 
 ドライランで確認してから実行する場合:
@@ -104,6 +105,7 @@ make homebrew   # Homebrew パッケージのみ
 make mas        # App Store アプリのみ
 make xcode      # Xcode 依存 Homebrew パッケージのみ
 make pleiades   # Pleiades All in One DMG の取得のみ
+make filezilla  # FileZilla 公式アーカイブの取得のみ
 make macos      # macOS 設定のみ
 make git        # Git 設定のみ
 make dotfiles   # dotfiles の clone/update と install
@@ -158,14 +160,27 @@ Error running command 'install' on app '<app-id>':
 
 ## プロファイル
 
-|                                          | 開発用 (`dev`) | 普段使い (`personal`) |
-| ---------------------------------------- | -------------- | --------------------- |
-| Homebrew packages（CLI/言語）            | ✅             | ✅                    |
-| 開発ツール（IDE/Docker/Git GUI）         | ✅             | ✅                    |
-| コミュニケーション（Discord/Slack など） | ❌             | ✅                    |
-| エンタメ・一般（Kindle/LINE など）       | ❌             | ✅                    |
-| dotfiles                                 | ✅             | ✅                    |
-| npm / uv ツール                          | ✅             | ✅                    |
+開発用と普段使いの違いは「開発に必要なものを入れるか」のみ。両プロファイル共通で
+互換 CLI（eza/bat/ripgrep など）、wezterm、VSCode、Microsoft Office 365、
+ansible/git は入ります（この環境を反映するために必要なため）。
+
+|                                                | 開発用 (`dev`) | 普段使い (`personal`) |
+| ---------------------------------------------- | -------------- | --------------------- |
+| 共通 CLI（eza/bat/ripgrep/vim/ffmpeg など）    | ✅             | ✅                    |
+| ansible / git / vault（環境反映用）            | ✅             | ✅                    |
+| Node.js / nodenv / Java(OpenJDK) / jenv / uv   | ✅             | ✅                    |
+| VSCode / wezterm / Chrome / qview / vlc        | ✅             | ✅                    |
+| Microsoft Office 365（Word/Excel/Teams など）  | ✅             | ✅                    |
+| 共通フォント（Nerd Font / HackGen など）       | ✅             | ✅                    |
+| FileZilla（公式アーカイブ DL）                 | ✅             | ✅                    |
+| 開発系 CLI（gh/helm/maven/go など）            | ✅             | ❌                    |
+| 開発ツール Cask（Docker/Postman/Sourcetree）   | ✅             | ❌                    |
+| swiftlint / Pleiades                           | ✅             | ❌                    |
+| MAS 開発系（Xcode/TestFlight/Developer）       | ✅             | ❌                    |
+| コミュニケーション（Discord/Slack/Webex など） | ❌             | ✅                    |
+| エンタメ（Kindle/LINE）                        | ❌             | ✅                    |
+| dotfiles                                       | ✅             | ✅                    |
+| npm / uv の dev 用グローバルツール             | ✅             | ❌                    |
 
 ## CI
 
@@ -194,8 +209,22 @@ Homebrew cask では提供されていないため、DMG の取得後に Finder 
 既定では Pleiades All in One 2025 Java Full Edition for Mac ARM を取得します。
 公式ページでは Mac 版 All in One と Pleiades プラグインが提供されています。
 
-FileZilla は現在の Homebrew cask では見つからなかったため、この playbook では自動導入していません。
-必要な場合は公式サイトからインストールし、設定だけ `make import-settings` で dotfiles に取り込みます。
+### filezilla
+
+FileZilla の公式アーカイブを Pleiades と同じく `curl -L` で `~/Downloads` に取得します。
+Homebrew cask では提供されていないため、取得後に手動で展開・配置します。
+
+| 変数                      | 説明                                       | デフォルト                                                                              |
+| ------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `filezilla_enabled`       | FileZilla アーカイブを取得するか           | `true`（共通）                                                                          |
+| `filezilla_version`       | DL する FileZilla クライアントのバージョン | `3.70.4`                                                                                |
+| `filezilla_url`           | FileZilla クライアントアーカイブの URL     | `https://download.filezilla-project.org/client/FileZilla_<ver>_macos-arm64.app.tar.bz2` |
+| `filezilla_download_dest` | アーカイブの保存先                         | `~/Downloads/FileZilla_<ver>_macos-arm64.app.tar.bz2`                                   |
+
+Apple Silicon 用ビルドのみ自動取得します。新版が出たら `group_vars/all.yml` の
+`filezilla_version` を更新してください（URL/保存先はテンプレートで自動追従）。
+Intel Mac の場合は `filezilla_url` を `_macos-x86.app.tar.bz2` に差し替えるか、
+SourceForge ミラーから DL してください。
 
 ### import-settings
 
@@ -237,44 +266,53 @@ Homebrew パッケージ・Cask をインストールします。
 
 #### Packages (`brew install`)
 
+共通（dev / personal どちらにも入る）:
+
 | パッケージ     | 用途                                     |
 | -------------- | ---------------------------------------- |
-| `act`          | GitHub Actions をローカル実行            |
-| `actionlint`   | GitHub Actions の lint                   |
-| `ansible`      | 構成管理ツール                           |
-| `argocd`       | ArgoCD CLI                               |
-| `automake`     | ビルドツール                             |
+| `ansible`      | 構成管理ツール（この環境を反映するため） |
 | `bat`          | cat の代替（シンタックスハイライト付き） |
-| `cmake`        | ビルドシステム                           |
 | `curl`         | HTTP クライアント                        |
 | `dos2unix`     | 改行コード変換                           |
 | `eza`          | ls の代替                                |
 | `ffmpeg`       | 動画・音声変換                           |
-| `gh`           | GitHub CLI                               |
 | `git`          | バージョン管理                           |
-| `go`           | Go 言語                                  |
-| `helm`         | Kubernetes パッケージマネージャ          |
-| `jenv`         | Java バージョン管理                      |
 | `macmon`       | Mac リソースモニタ                       |
-| `maven`        | Java ビルドツール                        |
-| `mysql-client` | MySQL クライアント                       |
-| `nmap`         | ネットワークスキャナ                     |
-| `node`         | Node.js                                  |
-| `nodenv`       | Node.js バージョン管理                   |
+| `mas`          | Mac App Store CLI                        |
 | `osx-cpu-temp` | CPU 温度モニタ                           |
-| `packer`       | イメージビルドツール（hashicorp/tap）    |
 | `ripgrep`      | 高速 grep                                |
-| `shfmt`        | Shell スクリプトフォーマッタ             |
-| `swiftformat`  | Swift コードフォーマッタ                 |
 | `telnet`       | Telnet クライアント                      |
-| `tenv`         | Terraform / OpenTofu バージョン管理      |
 | `tree`         | ディレクトリツリー表示                   |
+| `vault`        | dotfiles の secrets restore で使用       |
 | `vim`          | テキストエディタ                         |
 | `wget`         | ファイルダウンロード                     |
-| `xcodegen`     | Xcode プロジェクト生成                   |
 | `yt-dlp`       | 動画ダウンロード                         |
-| `zabbix`       | 監視エージェント                         |
+| `node`         | Node.js ランタイム                       |
+| `nodenv`       | Node.js バージョン管理                   |
+| `jenv`         | Java バージョン管理                      |
 | `uv`           | Python パッケージマネージャ              |
+
+dev のみ:
+
+| パッケージ     | 用途                                  |
+| -------------- | ------------------------------------- |
+| `act`          | GitHub Actions をローカル実行         |
+| `actionlint`   | GitHub Actions の lint                |
+| `argocd`       | ArgoCD CLI                            |
+| `automake`     | ビルドツール                          |
+| `cmake`        | ビルドシステム                        |
+| `gh`           | GitHub CLI                            |
+| `go`           | Go 言語                               |
+| `helm`         | Kubernetes パッケージマネージャ       |
+| `maven`        | Java ビルドツール                     |
+| `mysql-client` | MySQL クライアント                    |
+| `nmap`         | ネットワークスキャナ                  |
+| `packer`       | イメージビルドツール（hashicorp/tap） |
+| `shfmt`        | Shell スクリプトフォーマッタ          |
+| `swiftformat`  | Swift コードフォーマッタ              |
+| `tenv`         | Terraform / OpenTofu バージョン管理   |
+| `xcodegen`     | Xcode プロジェクト生成                |
+| `zabbix`       | 監視エージェント                      |
 
 #### Java / jenv
 
@@ -300,29 +338,49 @@ Apple Silicon では `openjdk@8` が x86_64 専用のため、自動的に対象
 
 #### Casks (`brew install --cask`)
 
+ターミナルは iTerm2 を廃止し、wezterm に完全移行しました。
+
+共通（dev / personal どちらにも入る）:
+
+| アプリ                  | 用途                          |
+| ----------------------- | ----------------------------- |
+| `visual-studio-code`    | エディタ（環境反映用）        |
+| `wezterm@nightly`       | ターミナル                    |
+| `google-chrome`         | ブラウザ                      |
+| `qview`                 | 画像ビューア                  |
+| `vlc`                   | メディアプレイヤー            |
+| `microsoft-word`        | Word                          |
+| `microsoft-excel`       | Excel                         |
+| `microsoft-powerpoint`  | PowerPoint                    |
+| `microsoft-outlook`     | Outlook                       |
+| `microsoft-onenote`     | OneNote                       |
+| `microsoft-teams`       | Teams                         |
+| `microsoft-onedrive`    | OneDrive                      |
+| `font-hack-nerd-font`   | Nerd Font                     |
+| `font-hackgen`          | HackGen フォント              |
+| `font-hackgen-nerd`     | HackGen Nerd フォント         |
+| `font-jetbrains-mono`   | JetBrains Mono フォント       |
+
+dev のみ:
+
 | アプリ                     | 用途                      |
 | -------------------------- | ------------------------- |
 | `claude-code`              | Claude Code CLI           |
-| `visual-studio-code`       | エディタ                  |
 | `docker`                   | Docker CLI                |
 | `docker-desktop`           | Docker Desktop            |
 | `github-copilot-for-xcode` | Xcode 向け GitHub Copilot |
-| `iterm2`                   | ターミナル                |
 | `postman`                  | API クライアント          |
 | `sourcetree`               | Git GUI クライアント      |
-| `wezterm@nightly`          | ターミナル                |
-| `google-chrome`            | ブラウザ                  |
-| `discord`                  | チャット                  |
-| `slack`                    | チャット                  |
-| `thunderbird`              | メールクライアント        |
-| `webex`                    | ビデオ会議                |
-| `webex-meetings`           | ビデオ会議                |
-| `qview`                    | 画像ビューア              |
-| `vlc`                      | メディアプレイヤー        |
-| `font-hack-nerd-font`      | Nerd Font                 |
-| `font-hackgen`             | HackGen フォント          |
-| `font-hackgen-nerd`        | HackGen Nerd フォント     |
-| `font-jetbrains-mono`      | JetBrains Mono フォント   |
+
+personal のみ:
+
+| アプリ           | 用途               |
+| ---------------- | ------------------ |
+| `discord`        | チャット           |
+| `slack`          | チャット           |
+| `thunderbird`    | メールクライアント |
+| `webex`          | ビデオ会議         |
+| `webex-meetings` | ビデオ会議         |
 
 ### mas
 
@@ -336,39 +394,43 @@ Mac App Store アプリをインストールします。事前に App Store へ�
 
 | アプリ             | App Store ID | dev | personal |
 | ------------------ | ------------ | --- | -------- |
-| Developer          | 640199958    | ✅  | ✅       |
+| Developer          | 640199958    | ✅  | ❌       |
 | Kindle             | 302584613    | ❌  | ✅       |
 | LanguageTranslator | 1218781096   | ✅  | ✅       |
 | LINE               | 539883307    | ❌  | ✅       |
-| PL2303Serial       | 1624835354   | ✅  | ✅       |
+| PL2303Serial       | 1624835354   | ✅  | ❌       |
 | Tailscale          | 1475387142   | ✅  | ✅       |
-| TestFlight         | 899247664    | ✅  | ✅       |
+| TestFlight         | 899247664    | ✅  | ❌       |
 | Windows App        | 1295203466   | ✅  | ✅       |
 | WireGuard          | 1451685025   | ✅  | ✅       |
-| Xcode              | 497799835    | ✅  | ✅       |
+| Xcode              | 497799835    | ✅  | ❌       |
 
 ### macos
 
 macOS のシステム設定を変更します。
 
-| 変数                                  | 説明                                                      | デフォルト              |
-| ------------------------------------- | --------------------------------------------------------- | ----------------------- |
-| `macos_show_hidden_files`             | 隠しファイルを表示する                                    | `true`                  |
-| `macos_show_all_filename_extensions`  | 拡張子を常に表示する                                      | `true`                  |
-| `macos_disable_auto_correct`          | 自動修正を無効にする                                      | `true`                  |
-| `macos_key_repeat_rate`               | キーリピート速度                                          | `2`                     |
-| `macos_key_repeat_delay`              | キーリピートの遅延                                        | `15`                    |
-| `macos_dock_autohide`                 | Dock を自動的に隠す                                       | `true`                  |
-| `macos_dock_icon_size`                | Dock のアイコンサイズ                                     | `48`                    |
-| `macos_screenshots_dir`               | スクリーンショット保存先                                  | `~/Desktop/screenshots` |
-| `macos_hostname_manage`               | Mac の ComputerName / HostName / LocalHostName を設定する | `true`                  |
-| `macos_hostname_device_name`          | PC 名に使うデバイス名（空なら Mac のモデルから自動判定）  | `""`                    |
-| `macos_hostname_purpose`              | PC 名に使う用途名（`dev` / `home` など）                  | `""`                    |
-| `macos_hostname_serial_suffix_length` | PC 名に付けるシリアル末尾の文字数（`0` なら全体）         | `0`                     |
+| 変数                                  | 説明                                                      | デフォルト                                          |
+| ------------------------------------- | --------------------------------------------------------- | --------------------------------------------------- |
+| `macos_show_hidden_files`             | 隠しファイルを表示する                                    | `true`                                              |
+| `macos_show_all_filename_extensions`  | 拡張子を常に表示する                                      | `true`                                              |
+| `macos_disable_auto_correct`          | 自動修正を無効にする                                      | `true`                                              |
+| `macos_key_repeat_rate`               | キーリピート速度                                          | `2`                                                 |
+| `macos_key_repeat_delay`              | キーリピートの遅延                                        | `15`                                                |
+| `macos_dock_autohide`                 | Dock を自動的に隠す                                       | `true`                                              |
+| `macos_dock_icon_size`                | Dock のアイコンサイズ                                     | `48`                                                |
+| `macos_screenshots_dir`               | スクリーンショット保存先                                  | `~/Desktop/screenshots`                             |
+| `macos_hostname_manage`               | Mac の ComputerName / HostName / LocalHostName を設定する | `true`                                              |
+| `macos_hostname_device_name`          | PC 名に使うデバイス名（空なら Mac のモデルから自動判定）  | `""`                                                |
+| `macos_hostname_purpose`              | PC 名に使う用途名（`dev` / `home` など）                  | `""`                                                |
+| `macos_hostname_serial_suffix_length` | PC 名に付けるシリアル末尾の文字数（`0` なら全体）         | `0`                                                 |
+| `macos_internal_dns_vip`              | 社内 LAN 経由で参照する内部 VIP                           | `192.168.20.10`                                     |
+| `macos_internal_dns_entries`          | `/etc/hosts` で内部 VIP に向けたい FQDN 一覧              | `nexus-cli.sk4869.info`, `nexus-docker.sk4869.info` |
 
 PC 名は `MACBOAシリアル値` や `MACMDEVシリアル値` のようにすべて大文字・区切りなしで設定します。
 デバイス名は `hw.model` から `MACM`(Mac mini) / `MACB`(MacBook) / `IMAC`(iMac) / `MACS`(Mac Studio) / `MACP`(Mac Pro) に自動判定します。
 `dev` プロファイルでは `DEV`、`personal` プロファイルでは `OA` を用途名に使います。
+
+`macos_internal_dns_entries` で指定した FQDN は、`/etc/hosts` の `# BEGIN/END ANSIBLE MANAGED: internal sk4869.info` ブロックで管理されます（Cloudflare をバイパスして社内 VIP に直接ルーティング）。`/etc/hosts` への書き込みは `sudo` が必要なので、`make dev` / `make personal` 経由（become パスワードを聞く）で実行してください。
 
 ### git
 
