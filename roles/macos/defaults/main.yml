@@ -13,7 +13,7 @@ macos_hostname_purpose: ""
 macos_hostname_serial_suffix_length: 0
 
 # Internal LAN routes for sk4869.info (Cloudflare bypass)
-macos_internal_dns_vip: "192.168.20.10"
+macos_internal_dns_vip: "192.168.100.153"
 macos_internal_dns_entries:
   - nexus-cli.sk4869.info
   - nexus-docker.sk4869.info
