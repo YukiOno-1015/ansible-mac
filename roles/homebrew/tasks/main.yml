@@ -38,12 +38,44 @@
     update_homebrew: true
   when: homebrew_java_packages_for_host | length > 0
 
+# pkg ベースの cask（Office / webex-meetings など）は内部で sudo を必要とする。
+# Ansible は非対話実行のため、become パスワードを sudo へ渡す askpass を用意する。
+# SUDO_ASKPASS が設定されていると Homebrew は `sudo -A` を使う。
+- name: Create sudo askpass helper for pkg-based casks
+  ansible.builtin.tempfile:
+    state: file
+    suffix: askpass
+  register: homebrew_cask_askpass
+  when: ansible_become_password is defined
+
+- name: Write sudo askpass helper script
+  ansible.builtin.copy:
+    dest: "{{ homebrew_cask_askpass.path }}"
+    mode: "0700"
+    content: |
+      #!/bin/sh
+      printf '%s\n' "{{ ansible_become_password }}"
+  when: ansible_become_password is defined
+  no_log: true
+
 - name: Install Homebrew casks
   community.general.homebrew_cask:
     name: "{{ item }}"
     state: present
   loop: "{{ homebrew_casks }}"
+  environment: >-
+    {{
+      {'SUDO_ASKPASS': homebrew_cask_askpass.path}
+      if ansible_become_password is defined
+      else {}
+    }}
   ignore_errors: true
+
+- name: Remove sudo askpass helper
+  ansible.builtin.file:
+    path: "{{ homebrew_cask_askpass.path | default('') }}"
+    state: absent
+  when: ansible_become_password is defined
 
 - name: Get Homebrew prefix
   ansible.builtin.command: brew --prefix
