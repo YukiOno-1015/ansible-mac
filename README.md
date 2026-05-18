@@ -118,26 +118,33 @@ make uv         # uv ツールのみ
 
 ### Homebrew Cask で sudo が必要な場合
 
-`docker-desktop` や `webex-meetings` など、一部の cask はインストール中に `sudo` を呼びます。
-Ansible 経由では sudo のパスワード入力ができず、次のようなエラーになることがあります。
+Microsoft Office（Word / Excel など）や `docker-desktop`、`webex-meetings` といった
+pkg ベースの cask は、インストール中に内部で `sudo` を呼びます。
+パスワードが渡らないと次のエラーになります。
 
 ```text
 sudo: a terminal is required to read the password
 sudo: a password is required
 ```
 
-`make dev` / `make personal` は、Homebrew Cask のインストール用に Ansible の become パスワードを最初に聞きます。
-`sudo make ...` は使わず、通常ユーザーで実行してください。
+これを避けるため、playbook は実行開始時に **macOS ログインパスワード** を一度だけ尋ねます
+（`site.yml` の `vars_prompt`）。入力した値は次の 2 か所で使われます。
+
+- Ansible 自身の `become`（`/etc/hosts` の書き換えなど）
+- Homebrew cask の pkg インストール用 askpass ヘルパ（`SUDO_ASKPASS` 経由で `sudo -A` に渡す）
+
+`sudo make ...` は使わず、通常ユーザーで実行してください。pkg cask を入れない対象
+（`make git` / `make dotfiles` など）だけ実行する場合は、プロンプトで空のまま Enter してかまいません。
 
 ```bash
-make personal
+make dev
 ```
 
-それでも失敗する場合は、該当 cask だけ対話的に入れてから再実行します。
+それでも特定の cask が失敗する場合は、その cask だけ対話的に入れてから再実行します。
 
 ```bash
 brew install --cask docker-desktop webex-meetings
-make personal
+make dev
 ```
 
 ### Mac App Store アプリのインストールに失敗する場合
@@ -356,7 +363,7 @@ Apple Silicon では `openjdk@8` が x86_64 専用のため、自動的に対象
 | `microsoft-outlook`     | Outlook                       |
 | `microsoft-onenote`     | OneNote                       |
 | `microsoft-teams`       | Teams                         |
-| `microsoft-onedrive`    | OneDrive                      |
+| `onedrive`              | OneDrive                      |
 | `discord`               | チャット                      |
 | `slack`                 | チャット                      |
 | `font-hack-nerd-font`   | Nerd Font                     |
@@ -431,7 +438,7 @@ PC 名は `MACBOAシリアル値` や `MACMDEVシリアル値` のようにす�
 デバイス名は `hw.model` から `MACM`(Mac mini) / `MACB`(MacBook) / `IMAC`(iMac) / `MACS`(Mac Studio) / `MACP`(Mac Pro) に自動判定します。
 `dev` プロファイルでは `DEV`、`personal` プロファイルでは `OA` を用途名に使います。
 
-`macos_internal_dns_entries` で指定した FQDN は、`/etc/hosts` の `# BEGIN/END ANSIBLE MANAGED: internal sk4869.info` ブロックで管理されます（Cloudflare をバイパスして社内 VIP に直接ルーティング）。`/etc/hosts` への書き込みは `sudo` が必要なので、`make dev` / `make personal` 経由（become パスワードを聞く）で実行してください。
+`macos_internal_dns_entries` で指定した FQDN は、`/etc/hosts` の `# BEGIN/END ANSIBLE MANAGED: internal sk4869.info` ブロックで管理されます（Cloudflare をバイパスして社内 VIP に直接ルーティング）。`/etc/hosts` への書き込みは `sudo` が必要なので、`make dev` / `make personal` 経由（開始時にパスワードを尋ねる）で実行してください。
 
 ### git
 

@@ -4,6 +4,16 @@
   connection: local
   gather_facts: true
 
+  # pkg ベースの cask（Microsoft Office など）と /etc/hosts 書き換えで sudo が必要。
+  # ここで取得した値は ansible の become と Homebrew cask の askpass の両方で使う。
+  # sudo 不要な対象だけ実行する場合は空のまま Enter でよい。
+  vars_prompt:
+    - name: ansible_become_password
+      prompt: "macOS ログインパスワード（sudo / Homebrew cask の pkg インストール用。不要なら空 Enter）"
+      private: true
+      unsafe: true
+      confirm: true
+
   roles:
     - role: homebrew
       tags: homebrew

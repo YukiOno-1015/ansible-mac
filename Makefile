@@ -1,7 +1,6 @@
 .PHONY: all init dev personal check homebrew mas xcode pleiades filezilla macos git dotfiles import-settings npm uv help
 
 PLAYBOOK = ansible-playbook site.yml
-PLAYBOOK_BECOME = ansible-playbook --ask-become-pass site.yml
 
 # npm global packages
 NPM_PACKAGES = \
@@ -78,13 +77,13 @@ init:
 
 dev:
 	@$(MAKE) ensure-not-root
-	$(PLAYBOOK_BECOME) -e @vars/dev.yml
+	$(PLAYBOOK) -e @vars/dev.yml
 	$(MAKE) npm
 	$(MAKE) uv
 
 personal:
 	@$(MAKE) ensure-not-root
-	$(PLAYBOOK_BECOME) -e @vars/personal.yml
+	$(PLAYBOOK) -e @vars/personal.yml
 
 check-dev:
 	$(PLAYBOOK) -e @vars/dev.yml --check
@@ -108,7 +107,7 @@ filezilla:
 
 macos:
 	@$(MAKE) ensure-not-root
-	$(PLAYBOOK_BECOME) --tags macos
+	$(PLAYBOOK) --tags macos
 
 git:
 	$(PLAYBOOK) --tags git

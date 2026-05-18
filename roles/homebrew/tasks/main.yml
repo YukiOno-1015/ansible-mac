@@ -38,24 +38,36 @@
     update_homebrew: true
   when: homebrew_java_packages_for_host | length > 0
 
-# pkg ベースの cask（Office / webex-meetings など）は内部で sudo を必要とする。
-# Ansible は非対話実行のため、become パスワードを sudo へ渡す askpass を用意する。
-# SUDO_ASKPASS が設定されていると Homebrew は `sudo -A` を使う。
-- name: Create sudo askpass helper for pkg-based casks
+# pkg ベースの cask（Microsoft Office / docker-desktop / webex-meetings など）は
+# インストール中に内部で sudo を呼ぶ。Ansible は非対話実行なので、become パスワードを
+# sudo へ渡す askpass ヘルパを用意する。SUDO_ASKPASS が設定されていると Homebrew は
+# sudo を -A 付きで呼び、このヘルパからパスワードを読み取る。
+# パスワードはスクリプトに直接埋め込まず別ファイルに置き（$ などの特殊文字対策）、
+# ヘルパはそれを cat するだけにする。vars_prompt が空ならこの仕組みは使わない。
+- name: Create askpass work directory for pkg-based casks
   ansible.builtin.tempfile:
-    state: file
+    state: directory
     suffix: askpass
   register: homebrew_cask_askpass
-  when: ansible_become_password is defined
+  when: ansible_become_password | default('') | length > 0
 
-- name: Write sudo askpass helper script
+- name: Write sudo password file and askpass helper
   ansible.builtin.copy:
-    dest: "{{ homebrew_cask_askpass.path }}"
-    mode: "0700"
-    content: |
-      #!/bin/sh
-      printf '%s\n' "{{ ansible_become_password }}"
-  when: ansible_become_password is defined
+    dest: "{{ homebrew_cask_askpass.path }}/{{ item.name }}"
+    mode: "{{ item.mode }}"
+    content: "{{ item.content }}"
+  loop:
+    - name: secret
+      mode: "0600"
+      content: "{{ ansible_become_password }}"
+    - name: askpass.sh
+      mode: "0700"
+      content: |
+        #!/bin/sh
+        cat '{{ homebrew_cask_askpass.path }}/secret'
+  loop_control:
+    label: "{{ item.name }}"
+  when: ansible_become_password | default('') | length > 0
   no_log: true
 
 - name: Install Homebrew casks
@@ -65,17 +77,17 @@
   loop: "{{ homebrew_casks }}"
   environment: >-
     {{
-      {'SUDO_ASKPASS': homebrew_cask_askpass.path}
-      if ansible_become_password is defined
+      {'SUDO_ASKPASS': homebrew_cask_askpass.path ~ '/askpass.sh'}
+      if ansible_become_password | default('') | length > 0
       else {}
     }}
   ignore_errors: true
 
-- name: Remove sudo askpass helper
+- name: Remove askpass work directory
   ansible.builtin.file:
     path: "{{ homebrew_cask_askpass.path | default('') }}"
     state: absent
-  when: ansible_become_password is defined
+  when: ansible_become_password | default('') | length > 0
 
 - name: Get Homebrew prefix
   ansible.builtin.command: brew --prefix
