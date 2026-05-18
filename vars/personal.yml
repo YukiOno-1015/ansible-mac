@@ -11,9 +11,7 @@ dotfiles_install_command: "./install.sh --restore-secrets"
 
 homebrew_casks: "{{ homebrew_casks_common + homebrew_casks_personal_extra }}"
 homebrew_casks_personal_extra:
-  # コミュニケーション
-  - discord
-  - slack
+  # コミュニケーション（Discord / Slack は共通へ移動済み）
   - thunderbird
   - webex
   - webex-meetings

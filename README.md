@@ -171,13 +171,14 @@ ansible/git は入ります（この環境を反映するために必要なた�
 | Node.js / nodenv / Java(OpenJDK) / jenv / uv   | ✅             | ✅                    |
 | VSCode / wezterm / Chrome / qview / vlc        | ✅             | ✅                    |
 | Microsoft Office 365（Word/Excel/Teams など）  | ✅             | ✅                    |
+| Discord / Slack                                | ✅             | ✅                    |
 | 共通フォント（Nerd Font / HackGen など）       | ✅             | ✅                    |
 | FileZilla（公式アーカイブ DL）                 | ✅             | ✅                    |
 | 開発系 CLI（gh/helm/maven/go など）            | ✅             | ❌                    |
 | 開発ツール Cask（Docker/Postman/Sourcetree）   | ✅             | ❌                    |
 | swiftlint / Pleiades                           | ✅             | ❌                    |
 | MAS 開発系（Xcode/TestFlight/Developer）       | ✅             | ❌                    |
-| コミュニケーション（Discord/Slack/Webex など） | ❌             | ✅                    |
+| コミュニケーション（Webex / Thunderbird）      | ❌             | ✅                    |
 | エンタメ（Kindle/LINE）                        | ❌             | ✅                    |
 | dotfiles                                       | ✅             | ✅                    |
 | npm / uv の dev 用グローバルツール             | ✅             | ❌                    |
@@ -356,6 +357,8 @@ Apple Silicon では `openjdk@8` が x86_64 専用のため、自動的に対象
 | `microsoft-onenote`     | OneNote                       |
 | `microsoft-teams`       | Teams                         |
 | `microsoft-onedrive`    | OneDrive                      |
+| `discord`               | チャット                      |
+| `slack`                 | チャット                      |
 | `font-hack-nerd-font`   | Nerd Font                     |
 | `font-hackgen`          | HackGen フォント              |
 | `font-hackgen-nerd`     | HackGen Nerd フォント         |
@@ -376,8 +379,6 @@ personal のみ:
 
 | アプリ           | 用途               |
 | ---------------- | ------------------ |
-| `discord`        | チャット           |
-| `slack`          | チャット           |
 | `thunderbird`    | メールクライアント |
 | `webex`          | ビデオ会議         |
 | `webex-meetings` | ビデオ会議         |

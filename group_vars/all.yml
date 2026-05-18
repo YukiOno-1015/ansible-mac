@@ -70,6 +70,10 @@ homebrew_casks_common:
   - microsoft-teams
   - onedrive
 
+  # コミュニケーション（dev / personal 共通）
+  - discord
+  - slack
+
   # フォント
   - font-hack-nerd-font
   - font-hackgen
