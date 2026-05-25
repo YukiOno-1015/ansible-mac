@@ -38,7 +38,10 @@ jobs:
       - name: Detect latest versions from Nexus
         id: detect
         env:
-          NEXUS_BASE: https://nexus.sk4869.info
+          # CI (datacenter IP) は nexus.sk4869.info の Cloudflare WAF に 403 で弾かれるため、
+          # CLI / API 用に解放された nexus-cli.sk4869.info を経由する。
+          # 実機 (mac) からの DL URL は group_vars 側の nexus.sk4869.info をそのまま使う。
+          NEXUS_BASE: https://nexus-cli.sk4869.info
           NEXUS_REPO: raw-tools
         run: |
           set -euo pipefail
@@ -144,16 +147,20 @@ jobs:
       - name: Verify URLs reachable
         if: steps.update.outputs.changed == '1'
         env:
+          # 実機側で参照する nexus.sk4869.info は CF WAF で 403 になるため、
+          # CI からは nexus-cli.sk4869.info でアセット存在を確認する。
+          # 両ホストは同一 Nexus 配信なので存在確認として等価。
+          NEXUS_VERIFY_BASE: https://nexus-cli.sk4869.info
           PL_RELEASE: ${{ steps.detect.outputs.pleiades_release }}
           PL_VERSION: ${{ steps.detect.outputs.pleiades_version }}
           FZ_VERSION: ${{ steps.detect.outputs.filezilla_version }}
         run: |
           set -euo pipefail
-          pl_url="https://nexus.sk4869.info/repository/raw-tools/eclipse/${PL_RELEASE}/pleiades-${PL_RELEASE}-java-mac-jre_${PL_VERSION}.dmg"
-          fz_url="https://nexus.sk4869.info/repository/raw-tools/filezilla/${FZ_VERSION}/FileZilla_${FZ_VERSION}_macos-arm64.app.tar.bz2"
+          pl_url="${NEXUS_VERIFY_BASE}/repository/raw-tools/eclipse/${PL_RELEASE}/pleiades-${PL_RELEASE}-java-mac-jre_${PL_VERSION}.dmg"
+          fz_url="${NEXUS_VERIFY_BASE}/repository/raw-tools/filezilla/${FZ_VERSION}/FileZilla_${FZ_VERSION}_macos-arm64.app.tar.bz2"
           curl -fsSI "$pl_url" >/dev/null
           curl -fsSI "$fz_url" >/dev/null
-          echo "Both URLs reachable."
+          echo "Both URLs reachable via ${NEXUS_VERIFY_BASE}."
 
       - name: Create Pull Request
         if: steps.update.outputs.changed == '1'
