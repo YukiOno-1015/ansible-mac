@@ -1,0 +1,184 @@
+---
+name: Update Nexus tools
+
+# Nexus (raw-tools) の Pleiades / FileZilla 最新バージョンを検出し、
+# group_vars/all.yml を更新する PR を作成、CI 通過後に auto-merge する。
+#
+# 必要設定:
+#   - リポジトリ Settings → General → "Allow auto-merge" を有効化
+#   - Settings → Actions → General → Workflow permissions
+#       → "Read and write permissions"
+#       → "Allow GitHub Actions to create and approve pull requests" を有効化
+
+on:
+  schedule:
+    # 毎日 03:15 JST (= 18:15 UTC 前日) に実行
+    - cron: "15 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Detect latest & open PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+          # GNU sort -V は標準で入っている
+
+      - name: Detect latest versions from Nexus
+        id: detect
+        env:
+          NEXUS_BASE: https://nexus.sk4869.info
+          NEXUS_REPO: raw-tools
+        run: |
+          set -euo pipefail
+
+          assets_json="$(curl -fsS "${NEXUS_BASE}/service/rest/v1/search/assets?repository=${NEXUS_REPO}")"
+
+          # ---- Pleiades (Eclipse) ----
+          # path: /eclipse/<release>/pleiades-<release>-java-mac-jre_<version>.dmg
+          # release (例: 2026-03) と version (例: 20260322) を抽出し、
+          # release 降順 → version 降順で最新を選ぶ。
+          pleiades_latest="$(
+            echo "$assets_json" |
+            jq -r '.items[].path' |
+            grep -E '^/eclipse/[0-9-]+/pleiades-[0-9-]+-java-mac-jre_[0-9]+\.dmg$' |
+            sort -V |
+            tail -n1
+          )"
+
+          if [ -z "$pleiades_latest" ]; then
+            echo "::error::No Pleiades asset found in Nexus"
+            exit 1
+          fi
+
+          pleiades_release="$(echo "$pleiades_latest" | sed -E 's#^/eclipse/([0-9-]+)/.*$#\1#')"
+          pleiades_version="$(echo "$pleiades_latest" | sed -E 's#.*_([0-9]+)\.dmg$#\1#')"
+
+          # ---- FileZilla ----
+          # path: /filezilla/<version>/FileZilla_<version>_macos-arm64.app.tar.bz2
+          filezilla_latest="$(
+            echo "$assets_json" |
+            jq -r '.items[].path' |
+            grep -E '^/filezilla/[0-9.]+/FileZilla_[0-9.]+_macos-arm64\.app\.tar\.bz2$' |
+            sort -V |
+            tail -n1
+          )"
+
+          if [ -z "$filezilla_latest" ]; then
+            echo "::error::No FileZilla asset found in Nexus"
+            exit 1
+          fi
+
+          filezilla_version="$(echo "$filezilla_latest" | sed -E 's#^/filezilla/([0-9.]+)/.*$#\1#')"
+
+          echo "pleiades_release=${pleiades_release}"   | tee -a "$GITHUB_OUTPUT"
+          echo "pleiades_version=${pleiades_version}"   | tee -a "$GITHUB_OUTPUT"
+          echo "filezilla_version=${filezilla_version}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Read current versions
+        id: current
+        run: |
+          set -euo pipefail
+          f=group_vars/all.yml
+          cur_pl_release="$(sed -nE 's/^pleiades_release:[[:space:]]*"?([^"#[:space:]]+)"?.*$/\1/p' "$f")"
+          cur_pl_version="$(sed -nE 's/^pleiades_version:[[:space:]]*"?([^"#[:space:]]+)"?.*$/\1/p' "$f")"
+          cur_fz_version="$(sed -nE 's/^filezilla_version:[[:space:]]*"?([^"#[:space:]]+)"?.*$/\1/p' "$f")"
+          echo "pleiades_release=${cur_pl_release}"   | tee -a "$GITHUB_OUTPUT"
+          echo "pleiades_version=${cur_pl_version}"   | tee -a "$GITHUB_OUTPUT"
+          echo "filezilla_version=${cur_fz_version}"  | tee -a "$GITHUB_OUTPUT"
+
+      - name: Update group_vars/all.yml
+        id: update
+        env:
+          NEW_PL_RELEASE: ${{ steps.detect.outputs.pleiades_release }}
+          NEW_PL_VERSION: ${{ steps.detect.outputs.pleiades_version }}
+          NEW_FZ_VERSION: ${{ steps.detect.outputs.filezilla_version }}
+          CUR_PL_RELEASE: ${{ steps.current.outputs.pleiades_release }}
+          CUR_PL_VERSION: ${{ steps.current.outputs.pleiades_version }}
+          CUR_FZ_VERSION: ${{ steps.current.outputs.filezilla_version }}
+        run: |
+          set -euo pipefail
+          f=group_vars/all.yml
+
+          changed=0
+          msg=""
+
+          if [ "$NEW_PL_RELEASE" != "$CUR_PL_RELEASE" ] || [ "$NEW_PL_VERSION" != "$CUR_PL_VERSION" ]; then
+            sed -i -E "s/^(pleiades_release:[[:space:]]*\")[^\"]+(\".*)$/\1${NEW_PL_RELEASE}\2/" "$f"
+            sed -i -E "s/^(pleiades_version:[[:space:]]*\")[^\"]+(\".*)$/\1${NEW_PL_VERSION}\2/" "$f"
+            msg="${msg}- Pleiades: ${CUR_PL_RELEASE}/${CUR_PL_VERSION} → ${NEW_PL_RELEASE}/${NEW_PL_VERSION}\n"
+            changed=1
+          fi
+
+          if [ "$NEW_FZ_VERSION" != "$CUR_FZ_VERSION" ]; then
+            sed -i -E "s/^(filezilla_version:[[:space:]]*\")[^\"]+(\".*)$/\1${NEW_FZ_VERSION}\2/" "$f"
+            msg="${msg}- FileZilla: ${CUR_FZ_VERSION} → ${NEW_FZ_VERSION}\n"
+            changed=1
+          fi
+
+          echo "changed=${changed}" | tee -a "$GITHUB_OUTPUT"
+          {
+            echo "body<<EOF"
+            printf "%b" "$msg"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$changed" = "1" ]; then
+            echo "::notice::Updated group_vars/all.yml"
+            git --no-pager diff "$f" || true
+          else
+            echo "::notice::No version change"
+          fi
+
+      - name: Verify URLs reachable
+        if: steps.update.outputs.changed == '1'
+        env:
+          PL_RELEASE: ${{ steps.detect.outputs.pleiades_release }}
+          PL_VERSION: ${{ steps.detect.outputs.pleiades_version }}
+          FZ_VERSION: ${{ steps.detect.outputs.filezilla_version }}
+        run: |
+          set -euo pipefail
+          pl_url="https://nexus.sk4869.info/repository/raw-tools/eclipse/${PL_RELEASE}/pleiades-${PL_RELEASE}-java-mac-jre_${PL_VERSION}.dmg"
+          fz_url="https://nexus.sk4869.info/repository/raw-tools/filezilla/${FZ_VERSION}/FileZilla_${FZ_VERSION}_macos-arm64.app.tar.bz2"
+          curl -fsSI "$pl_url" >/dev/null
+          curl -fsSI "$fz_url" >/dev/null
+          echo "Both URLs reachable."
+
+      - name: Create Pull Request
+        if: steps.update.outputs.changed == '1'
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: chore/update-nexus-tools
+          delete-branch: true
+          commit-message: "chore: Nexus 上の Pleiades / FileZilla を最新版へ更新"
+          title: "chore: Nexus tools を最新版へ更新"
+          body: |
+            Nexus (raw-tools) の最新バージョンを検出し自動更新。
+
+            ${{ steps.update.outputs.body }}
+
+            このPRは GitHub Actions により自動生成され、CI 通過後に auto-merge される。
+          labels: |
+            dependencies
+            automated
+
+      - name: Enable auto-merge
+        if: steps.update.outputs.changed == '1' && steps.cpr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          gh pr merge "$PR_NUMBER" --auto --squash --delete-branch

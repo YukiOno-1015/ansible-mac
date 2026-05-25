@@ -126,15 +126,23 @@ homebrew_java_packages:
 xcode_homebrew_packages: []
 
 # Pleiades は dev 専用
+# 社内 Nexus (raw-tools/eclipse) からダウンロード
+# 新版が出たら release / version を更新
+# https://nexus.sk4869.info/#browse/browse:raw-tools:eclipse
 pleiades_enabled: false
-pleiades_url: "https://ftp.jaist.ac.jp/pub/mergedoc/pleiades/2025/pleiades-2025-12-java-mac-jre_20260117.dmg"
-pleiades_download_dest: "{{ ansible_env.HOME }}/Downloads/pleiades-2025-12-java-mac-jre_20260117.dmg"
+pleiades_release: "2026-03"
+pleiades_version: "20260322"
+pleiades_filename: "pleiades-{{ pleiades_release }}-java-mac-jre_{{ pleiades_version }}.dmg"
+pleiades_url: "https://nexus.sk4869.info/repository/raw-tools/eclipse/{{ pleiades_release }}/{{ pleiades_filename }}"
+pleiades_download_dest: "{{ ansible_env.HOME }}/Downloads/{{ pleiades_filename }}"
 
 # FileZilla（共通）
-# Homebrew cask に無いため公式アーカイブを直接 DL
+# 社内 Nexus (raw-tools/filezilla) からダウンロード
 # 新版が出たら version を更新
-# https://filezilla-project.org/download.php?platform=macos-arm64
+# https://nexus.sk4869.info/#browse/browse:raw-tools:filezilla
 filezilla_enabled: true
-filezilla_version: "3.70.4"
-filezilla_url: "https://download.filezilla-project.org/client/FileZilla_{{ filezilla_version }}_macos-arm64.app.tar.bz2"
-filezilla_download_dest: "{{ ansible_env.HOME }}/Downloads/FileZilla_{{ filezilla_version }}_macos-arm64.app.tar.bz2"
+filezilla_version: "3.70.5"
+filezilla_filename: "FileZilla_{{ filezilla_version }}_macos-arm64.app.tar.bz2"
+filezilla_url: >-
+  https://nexus.sk4869.info/repository/raw-tools/filezilla/{{ filezilla_version }}/{{ filezilla_filename }}
+filezilla_download_dest: "{{ ansible_env.HOME }}/Downloads/{{ filezilla_filename }}"
