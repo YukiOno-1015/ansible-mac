@@ -1,0 +1,22 @@
+group_vars/all.yml
+  s_a1525facf73661::t_ebaf508f1775dc 129-131,133-137,140,142,144-145,148
+  s_a1525facf73661::t_351dc28f984110 146-147
+.github/workflows/update-nexus-tools.yml
+  s_a1525facf73661::t_85e4d3caadc8c6 1-184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "97a7ccf09d90ae190f119e5abf2c5faabe8dfa30",
+  "prompts": {},
+  "sessions": {
+    "s_a1525facf73661": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9f2c48ab-7b5b-4657-a696-f5af53e6b4b3",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "jqit-yukiono <jqit.yuki.ono@gmail.com>"
+    }
+  }
+}
