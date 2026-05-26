@@ -1,0 +1,146 @@
+# YukiOno-1015/jenkins-cli の Mirror Pipeline 完了時に送られる
+# repository_dispatch を受け、group_vars/all.yml の
+# filezilla_version / pleiades_release / pleiades_version を更新する PR を作成する。
+#
+# 必要な secrets:
+#   secrets.RELEASE_PAT  : push / PR 作成用 PAT (scope `repo`)
+#                          GITHUB_TOKEN で push すると追従 CI が発火しないため PAT 必須。
+#
+# 受け付けるイベント:
+#   update-filezilla
+#     client_payload.version  : "3.70.5" のような FileZilla バージョン
+#   update-pleiades
+#     client_payload.release  : "2026-03" のような Pleiades リリース表記
+#     client_payload.buildDate: "20260322" のような build date
+---
+name: Update mac app version (Mirror Pipeline からの dispatch)
+
+"on":
+  repository_dispatch:
+    types:
+      - update-filezilla
+      - update-pleiades
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-mac-app-version-${{ github.event.action }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.RELEASE_PAT }}
+          fetch-depth: 0
+
+      - name: ペイロードを表示
+        env:
+          EVENT_TYPE: ${{ github.event.action }}
+          PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+        run: |
+          set -euo pipefail
+          echo "EVENT_TYPE=${EVENT_TYPE}"
+          echo "PAYLOAD=${PAYLOAD}"
+
+      - name: group_vars/all.yml を更新
+        id: edit
+        env:
+          EVENT_TYPE: ${{ github.event.action }}
+          FILEZILLA_VERSION: ${{ github.event.client_payload.version }}
+          PLEIADES_RELEASE: ${{ github.event.client_payload.release }}
+          PLEIADES_BUILD_DATE: ${{ github.event.client_payload.buildDate }}
+        run: |
+          set -euo pipefail
+          FILE=group_vars/all.yml
+          test -f "$FILE"
+
+          case "$EVENT_TYPE" in
+            update-filezilla)
+              if [ -z "${FILEZILLA_VERSION}" ]; then
+                echo "client_payload.version が空のため終了" >&2
+                exit 1
+              fi
+              CURRENT=$(sed -nE 's/^filezilla_version:[[:space:]]+"?([^"]+)"?[[:space:]]*$/\1/p' "$FILE" | head -n1)
+              echo "current=${CURRENT}"
+              echo "new=${FILEZILLA_VERSION}"
+              if [ "$CURRENT" = "$FILEZILLA_VERSION" ]; then
+                echo "差分なし。PR は作成しない。"
+                echo "changed=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              sed -i -E "s|^(filezilla_version:[[:space:]]+).*|\1\"${FILEZILLA_VERSION}\"|" "$FILE"
+              {
+                echo "changed=true"
+                echo "branch=auto/filezilla-${FILEZILLA_VERSION}"
+                echo "title=chore: filezilla_version を ${FILEZILLA_VERSION} に更新"
+                echo "summary=FileZilla を ${CURRENT:-(未設定)} から ${FILEZILLA_VERSION} に自動更新"
+              } >> "$GITHUB_OUTPUT"
+              ;;
+
+            update-pleiades)
+              if [ -z "${PLEIADES_RELEASE}" ] || [ -z "${PLEIADES_BUILD_DATE}" ]; then
+                echo "client_payload.release / buildDate が空のため終了" >&2
+                exit 1
+              fi
+              CUR_REL=$(sed -nE 's/^pleiades_release:[[:space:]]+"?([^"]+)"?[[:space:]]*$/\1/p' "$FILE" | head -n1)
+              CUR_BD=$(sed -nE 's/^pleiades_version:[[:space:]]+"?([^"]+)"?[[:space:]]*$/\1/p' "$FILE" | head -n1)
+              echo "current_release=${CUR_REL} current_build_date=${CUR_BD}"
+              echo "new_release=${PLEIADES_RELEASE} new_build_date=${PLEIADES_BUILD_DATE}"
+              if [ "$CUR_REL" = "$PLEIADES_RELEASE" ] && [ "$CUR_BD" = "$PLEIADES_BUILD_DATE" ]; then
+                echo "差分なし。PR は作成しない。"
+                echo "changed=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              sed -i -E "s|^(pleiades_release:[[:space:]]+).*|\1\"${PLEIADES_RELEASE}\"|" "$FILE"
+              sed -i -E "s|^(pleiades_version:[[:space:]]+).*|\1\"${PLEIADES_BUILD_DATE}\"|" "$FILE"
+              {
+                echo "changed=true"
+                echo "branch=auto/pleiades-${PLEIADES_RELEASE}-${PLEIADES_BUILD_DATE}"
+                echo "title=chore: pleiades を ${PLEIADES_RELEASE} (${PLEIADES_BUILD_DATE}) に更新"
+                echo "summary=Pleiades を ${CUR_REL:-(未設定)} (${CUR_BD:-(未設定)}) から ${PLEIADES_RELEASE} (${PLEIADES_BUILD_DATE}) に自動更新"
+              } >> "$GITHUB_OUTPUT"
+              ;;
+
+            *)
+              echo "未対応 event_type: ${EVENT_TYPE}" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "--- 差分プレビュー ---"
+          git --no-pager diff -- "$FILE" || true
+
+      - name: PR を作成
+        if: steps.edit.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.RELEASE_PAT }}
+          branch: ${{ steps.edit.outputs.branch }}
+          delete-branch: true
+          base: main
+          title: ${{ steps.edit.outputs.title }}
+          body: |
+            Mirror Pipeline (jenkins-cli / ${{ github.event.action }}) からの自動更新。
+
+            - 対象 event: `${{ github.event.action }}`
+            - 概要: ${{ steps.edit.outputs.summary }}
+            - 発火元 Jenkins: ${{ github.event.client_payload.jenkins }}
+
+            Mirror が Nexus へ新版を push したタイミングで送られる。
+          commit-message: ${{ steps.edit.outputs.title }}
+          labels: |
+            automated
+            mac-app-update
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+
+      - name: 変更なしの場合のログ
+        if: steps.edit.outputs.changed != 'true'
+        run: |
+          echo "group_vars/all.yml に差分なし。PR は作成しなかった。"
