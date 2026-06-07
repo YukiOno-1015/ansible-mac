@@ -141,7 +141,7 @@ pleiades_download_dest: "{{ ansible_env.HOME }}/Downloads/{{ pleiades_filename }
 # 新版が出たら version を更新
 # https://nexus.sk4869.info/#browse/browse:raw-tools:filezilla
 filezilla_enabled: true
-filezilla_version: "3.70.5"
+filezilla_version: "3.70.6"
 filezilla_filename: "FileZilla_{{ filezilla_version }}_macos-arm64.app.tar.bz2"
 filezilla_url: >-
   https://nexus.sk4869.info/repository/raw-tools/filezilla/{{ filezilla_version }}/{{ filezilla_filename }}
