@@ -45,7 +45,7 @@
   community.general.osx_defaults:
     domain: com.apple.dock
     key: tilesize
-    type: float
+    type: int
     value: "{{ macos_dock_icon_size }}"
 
 - name: Create screenshots directory
