@@ -41,10 +41,10 @@ pleiades_enabled: true
 
 homebrew_casks: "{{ homebrew_casks_common + homebrew_casks_dev_extra }}"
 homebrew_casks_dev_extra:
-  - claude-code
+  # claude-code は共通へ移動済み
   - docker
   - docker-desktop
-  - github-copilot-for-xcode
+  # github-copilot-for-xcode は共通へ移動済み
   - postman
   - sourcetree
 

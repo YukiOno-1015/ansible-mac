@@ -74,6 +74,14 @@ homebrew_casks_common:
   - discord
   - slack
 
+  # AI アシスタント（GUI + CLI、全環境共通）
+  - claude          # Claude デスクトップ（GUI）
+  - claude-code     # Claude Code（CLI）
+  - chatgpt         # ChatGPT デスクトップ（GUI）
+  - codex           # OpenAI Codex（CLI）
+  - github-copilot-for-xcode  # GitHub Copilot（GUI / Xcode 拡張）
+  - copilot-cli     # GitHub Copilot CLI（CLI）
+
   # フォント
   - font-hack-nerd-font
   - font-hackgen
