@@ -33,3 +33,5 @@
       tags: git
     - role: dotfiles
       tags: dotfiles
+    - role: mcp
+      tags: mcp

@@ -1,0 +1,49 @@
+---
+- name: Check claude CLI is available
+  ansible.builtin.command: which claude
+  register: mcp_claude_check
+  changed_when: false
+  failed_when: false
+
+- name: Warn when claude CLI is missing
+  ansible.builtin.debug:
+    msg: "claude CLI が見つからないため MCP 登録をスキップします（claude-code cask を先に導入）"
+  when:
+    - mcp_enabled
+    - mcp_claude_check.rc != 0
+
+- name: Check existing MCP servers
+  ansible.builtin.command: "claude mcp get {{ item.name }}"
+  loop: "{{ mcp_servers }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: mcp_get_result
+  changed_when: false
+  failed_when: false
+  when:
+    - mcp_enabled
+    - mcp_claude_check.rc == 0
+
+- name: Register missing MCP servers
+  ansible.builtin.command:
+    # expand_argument_vars: false で $HOME / $VAR を展開させない。
+    # MCP の config は実行時に内側の sh が .secrets.env を source して展開する想定のため、
+    # ここで展開するとトークン等が ~/.claude.json に平文で焼き込まれてしまう。
+    argv:
+      - claude
+      - mcp
+      - add-json
+      - "{{ item.item.name }}"
+      - "{{ item.item.config | to_json }}"
+      - "--scope"
+      - "{{ mcp_scope }}"
+    expand_argument_vars: false
+  loop: "{{ mcp_get_result.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when:
+    - mcp_enabled
+    - mcp_claude_check.rc == 0
+    - item.rc is defined
+    - item.rc != 0
+  changed_when: true
