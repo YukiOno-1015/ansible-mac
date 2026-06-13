@@ -1,0 +1,23 @@
+group_vars/all.yml
+  s_2f845e614fcccf::t_6c874a9a22f8e7 77-81,84
+  s_2f845e614fcccf::t_bcabbe00ee5a34 82-83
+vars/dev.yml
+  s_2f845e614fcccf::t_a2399a80cdb486 47
+  s_2f845e614fcccf::t_9ffc4cd457017f 44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "1219ea779833eb12817c50a16c4f5f0d4d99327a",
+  "prompts": {},
+  "sessions": {
+    "s_2f845e614fcccf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "914713b9-d149-4468-9660-b489e455f2dc",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "jqit-yukiono <jqit.yuki.ono@gmail.com>"
+    }
+  }
+}
