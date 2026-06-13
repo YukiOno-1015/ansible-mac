@@ -1,0 +1,112 @@
+---
+# Claude Code MCP サーバ登録（全環境共通）
+#
+# 各サーバ定義は `claude mcp add-json <name> <json> --scope user` で登録する。
+# トークンを要するサーバは config 内で実行時に $HOME/.secrets.env を source する構成。
+# （.secrets.env 自体は dotfiles role の --restore-secrets で配置されるため、
+#  本 role は dotfiles より後に実行する。トークンを直接埋め込まない。）
+#
+# 新しい MCP を増やすときは mcp_servers にエントリを追加する。
+mcp_enabled: true
+mcp_scope: user
+
+mcp_servers:
+  - name: context7
+    config:
+      type: http
+      url: https://mcp.context7.com/mcp
+
+  - name: github
+    config:
+      type: stdio
+      command: sh
+      args:
+        - "-c"
+        - 'set -a; . "$HOME/.secrets.env"; set +a; exec docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server'
+      env: {}
+
+  - name: serena
+    config:
+      type: stdio
+      command: uvx
+      args:
+        - "--from"
+        - git+https://github.com/oraios/serena
+        - serena
+        - start-mcp-server
+        - "--context"
+        - ide-assistant
+      env: {}
+
+  - name: playwright
+    config:
+      type: stdio
+      command: npx
+      args:
+        - "-y"
+        - "@playwright/mcp@latest"
+      env: {}
+
+  - name: chrome-devtools
+    config:
+      type: stdio
+      command: npx
+      args:
+        - "-y"
+        - chrome-devtools-mcp@latest
+      env: {}
+
+  - name: sequential-thinking
+    config:
+      type: stdio
+      command: npx
+      args:
+        - "-y"
+        - "@modelcontextprotocol/server-sequential-thinking"
+      env: {}
+
+  - name: clasp
+    config:
+      type: stdio
+      command: npx
+      args:
+        - "-y"
+        - "@google/clasp"
+        - mcp
+      env: {}
+
+  - name: backlog
+    config:
+      type: stdio
+      command: sh
+      args:
+        - "-c"
+        - 'set -a; . "$HOME/.secrets.env"; set +a; exec npx -y backlog-mcp-server'
+      env: {}
+
+  - name: qiita
+    config:
+      type: stdio
+      command: sh
+      args:
+        - "-c"
+        - 'set -a; . "$HOME/.secrets.env"; QIITA_API_TOKEN="$JQIT_QIITA_ACCESS_TOKEN"; set +a; exec npx -y @2bo/qiita-mcp-server'
+      env: {}
+
+  - name: n8n-mcp
+    config:
+      type: stdio
+      command: sh
+      args:
+        - "-c"
+        - 'set -a; . "$HOME/.secrets.env"; MCP_MODE=stdio; LOG_LEVEL=error; DISABLE_CONSOLE_OUTPUT=true; set +a; exec npx -y n8n-mcp'
+      env: {}
+
+  - name: linksee
+    config:
+      type: stdio
+      command: npx
+      args:
+        - "-y"
+        - linksee-memory
+      env: {}
