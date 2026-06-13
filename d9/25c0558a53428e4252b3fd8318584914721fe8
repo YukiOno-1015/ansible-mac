@@ -1,0 +1,25 @@
+site.yml
+  s_2f845e614fcccf::t_67ecb5dc183bcd 36-37
+roles/mcp/defaults/main.yml
+  s_2f845e614fcccf::t_8de2f591460f9a 1-112
+roles/mcp/tasks/main.yml
+  s_2f845e614fcccf::t_7ab615fef7b122 16
+  s_2f845e614fcccf::t_a67d7b81f783cb 1-15,17-28,32-39,41-49
+  s_2f845e614fcccf::t_37c2f57ff5176b 29-31,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "d925c0558a53428e4252b3fd8318584914721fe8",
+  "prompts": {},
+  "sessions": {
+    "s_2f845e614fcccf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "914713b9-d149-4468-9660-b489e455f2dc",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "jqit-yukiono <jqit.yuki.ono@gmail.com>"
+    }
+  }
+}
