@@ -90,7 +90,7 @@ mcp_servers:
       command: sh
       args:
         - "-c"
-        - 'set -a; . "$HOME/.secrets.env"; QIITA_API_TOKEN="$QIITA_API_TOKEN"; set +a; exec npx -y @2bo/qiita-mcp-server'
+        - 'set -a; . "$HOME/.secrets.env"; set +a; exec npx -y @2bo/qiita-mcp-server'
       env: {}
 
   - name: n8n-mcp
