@@ -1,0 +1,19 @@
+roles/mcp/defaults/main.yml
+  s_df8182b7013d24::t_40b1d03b86fc88 93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "096381814bfa365e57f751b76af9d73065f070b6",
+  "prompts": {},
+  "sessions": {
+    "s_df8182b7013d24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b4f0cde-9585-4a55-9771-0e62c57d3e6b",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "jqit-yukiono <jqit.yuki.ono@gmail.com>"
+    }
+  }
+}
