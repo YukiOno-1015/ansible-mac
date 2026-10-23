@@ -1,464 +1,171 @@
 # ansible-mac
 
 Ansible を使った Mac セットアップ自動化プロジェクトです。
+Homebrew・App Store アプリ・macOS 設定・Git 設定・dotfiles・Claude Code の MCP サーバ登録までを、同じ手順で何度でも再現できます。
+
+- **2 つのプロファイル**: 開発用（`dev`）と普段使い（`personal`）。共通セットに差分を足す構成
+- **冪等**: 繰り返し実行しても同じ状態に収束
+- **ローカル完結**: `localhost` への自己適用（SSH 不要）。入口は `make`
+
+要件・設計・運用の詳細は **[docs/](docs/README.md)** にまとめています。
 
 ## 前提条件
 
-- macOS
-- [Homebrew](https://brew.sh/ja/)
-- Ansible (`brew install ansible`)
+- macOS（Apple Silicon 前提）
+- 管理者権限を持つ通常ユーザー（`sudo make ...` は使えません）
+- App Store にサインイン済み（`mas` を使うため）
+- [Homebrew](https://brew.sh/ja/) と Ansible。未導入なら `make init` で導入できます
 
-Homebrew / Ansible が未導入の場合は、次のコマンドで前提条件をセットアップできます。
+## クイックスタート
 
-```bash
-make init
-```
+1. リポジトリをクローンします。
 
-## ディレクトリ構成
+   ```bash
+   git clone git@github.com:YukiOno-1015/ansible-mac.git     # SSH
+   # git clone https://github.com/YukiOno-1015/ansible-mac.git   # HTTPS
+   cd ansible-mac
+   ```
 
-```
-ansible-mac/
-├── Makefile             # エントリーポイント
-├── ansible.cfg          # Ansible設定
-├── requirements.yml     # Ansible collection 依存関係
-├── site.yml             # メインplaybook
-├── scripts/
-│   └── import-app-settings.sh # 現環境のアプリ設定取り込み
-├── inventory/
-│   └── localhost        # ローカル実行用インベントリ
-├── vars/
-│   ├── dev.yml          # 開発用プロファイル（dev 専用 packages / Casks / MAS apps）
-│   └── personal.yml     # 普段使い用プロファイル（コミュニケーション / エンタメ）
-├── group_vars/
-│   └── all.yml          # 共通変数（共通 packages / Casks / MAS / Git設定）
-└── roles/
-    ├── homebrew/        # Homebrewパッケージ・Caskのインストール
-    ├── mas/             # Mac App Storeアプリのインストール
-    ├── xcode/           # Xcode 依存 Homebrew パッケージのインストール
-    ├── pleiades/        # Pleiades All in One DMG の取得
-    ├── filezilla/       # FileZilla 公式アーカイブの取得
-    ├── macos/           # macOSシステム設定
-    ├── git/             # Gitグローバル設定
-    └── dotfiles/        # dotfiles リポジトリの clone/update と install
-```
+2. 前提条件（Homebrew / Ansible / Ansible collection）をセットアップします。Homebrew を新規に導入した場合は、PATH も通します。
 
-## セットアップ
+   ```bash
+   make init
+   eval "$(/opt/homebrew/bin/brew shellenv)"
+   ```
 
-### 1. リポジトリをクローン
+3. 変数を確認します。自分の環境で使う場合は、`group_vars/all.yml` の Git の設定を書き換えます。
 
-SSH:
+   ```yaml
+   git_user_name: "Your Name"
+   git_user_email: "your@email.com"
+   ```
 
-```bash
-git clone git@github.com:YukiOno-1015/ansible-mac.git
-cd ansible-mac
-```
+4. プロファイルを選んで実行します。実行の冒頭で macOS のログインパスワードを尋ねられます（理由は下の「実行時の注意」）。
 
-HTTPS:
+   ```bash
+   make dev        # 開発用（開発ツール + 共通セット）
+   make personal   # 普段使い用（コミュニケーション / エンタメ + 共通セット、開発ツールなし）
+   ```
 
-```bash
-git clone https://github.com/YukiOno-1015/ansible-mac.git
-cd ansible-mac
-```
+実行後に、Pleiades / FileZilla の展開など、いくつか手作業が残ります。詳しくは [docs/operations.md](docs/operations.md) を参照してください。
 
-### 2. 前提条件をセットアップ
+## make ターゲット
 
-```bash
-make init
-```
+| コマンド | 内容 |
+| --- | --- |
+| `make init` | 前提条件（Homebrew / Ansible / collection）のセットアップ |
+| `make dev` | 開発用の全体適用（playbook + npm グローバルパッケージ + uv ツール） |
+| `make personal` | 普段使い用の全体適用（playbook のみ） |
+| `make check-dev` / `make check-personal` | ドライラン（現状は最後まで完走しません。[KI-02](docs/known-issues.md)） |
+| `make homebrew` | Homebrew の formula / cask |
+| `make mas` | App Store アプリ |
+| `make pleiades` | Pleiades DMG の取得 |
+| `make filezilla` | FileZilla アーカイブの取得 |
+| `make macos` | macOS 設定、ホスト名、`/etc/hosts` |
+| `make git` | Git のグローバル設定 |
+| `make dotfiles` | dotfiles の clone/update と install |
+| `make import-settings` | 現環境のアプリ設定を dotfiles に取り込み |
+| `make npm` / `make uv` | npm グローバルパッケージ / uv ツール |
 
-### 3. 変数を編集
+> **部分実行のターゲットはプロファイルを引き継ぎません**（共通セットだけで動きます）。
+> 特に `make macos` はホスト名の用途名が消え、`make pleiades` は何も取得しません。
+> プロファイルを保つには `ansible-playbook site.yml --tags macos -e @vars/dev.yml` のように直接実行してください（[KI-03](docs/known-issues.md)）。
+> また、`make xcode` は何も実行せず、MCP サーバ登録用のターゲットはありません（[KI-04](docs/known-issues.md)）。
+> MCP は `ansible-playbook site.yml --tags mcp` で実行します。
 
-`group_vars/all.yml` を編集して、インストールするパッケージや設定値をカスタマイズします。
-
-```bash
-vim group_vars/all.yml
-```
-
-**最低限設定すべき項目:**
-
-```yaml
-git_user_name: "Your Name"
-git_user_email: "your@email.com"
-```
-
-### 4. 実行
-
-プロファイルを選んで実行します。
-
-```bash
-make init       # 前提条件（Homebrew / Ansible）をセットアップ
-make dev        # 開発用（開発ツール + 共通セット）
-make personal   # 普段使い用（コミュニケーション/エンタメ + 共通セット、開発ツールなし）
-```
-
-ドライランで確認してから実行する場合:
-
-```bash
-make check-dev
-make check-personal
-```
-
-特定の対象のみ実行したい場合:
-
-```bash
-make homebrew   # Homebrew パッケージのみ
-make mas        # App Store アプリのみ
-make xcode      # Xcode 依存 Homebrew パッケージのみ
-make pleiades   # Pleiades All in One DMG の取得のみ
-make filezilla  # FileZilla 公式アーカイブの取得のみ
-make macos      # macOS 設定のみ
-make git        # Git 設定のみ
-make dotfiles   # dotfiles の clone/update と install
-make import-settings # 現環境のアプリ設定を dotfiles に取り込み
-make npm        # npm グローバルパッケージのみ
-make uv         # uv ツールのみ
-```
-
-## 実行時メモ
-
-### Homebrew Cask で sudo が必要な場合
-
-Microsoft Office（Word / Excel など）や `docker-desktop`、`webex-meetings` といった
-pkg ベースの cask は、インストール中に内部で `sudo` を呼びます。
-パスワードが渡らないと次のエラーになります。
-
-```text
-sudo: a terminal is required to read the password
-sudo: a password is required
-```
-
-これを避けるため、playbook は実行開始時に **macOS ログインパスワード** を一度だけ尋ねます
-（`site.yml` の `vars_prompt`）。入力した値は次の 2 か所で使われます。
-
-- Ansible 自身の `become`（`/etc/hosts` の書き換えなど）
-- Homebrew cask の pkg インストール用 askpass ヘルパ（`SUDO_ASKPASS` 経由で `sudo -A` に渡す）
-
-`sudo make ...` は使わず、通常ユーザーで実行してください。pkg cask を入れない対象
-（`make git` / `make dotfiles` など）だけ実行する場合は、プロンプトで空のまま Enter してかまいません。
-
-```bash
-make dev
-```
-
-それでも特定の cask が失敗する場合は、その cask だけ対話的に入れてから再実行します。
-
-```bash
-brew install --cask docker-desktop webex-meetings
-make dev
-```
-
-### Mac App Store アプリのインストールに失敗する場合
-
-`mas` は App Store へのサインインが必要です。
-次のような空のエラーで落ちる場合は、App Store 側の状態を確認します。
-
-```text
-Error running command 'install' on app '<app-id>':
-```
-
-確認すること:
-
-- App Store アプリを開いてサインインしていること
-- 初回利用規約や支払い情報の確認が残っていないこと
-- `mas config` で `store` / `region` が表示されること
-- `mas list` が固まる場合は、App Store アプリを開いて状態を直すか `mas reset` を実行すること
-
-状態を直したら、`make mas` または `make personal` を再実行します。
+ドライランや部分実行の使い分けは、[docs/operations.md](docs/operations.md) の 3 章にあります。
 
 ## プロファイル
 
-開発用と普段使いの違いは「開発に必要なものを入れるか」のみ。両プロファイル共通で
-互換 CLI（eza/bat/ripgrep など）、wezterm、VSCode、Microsoft Office 365、
-ansible/git は入ります（この環境を反映するために必要なため）。
+2 つの違いは「開発に必要なものを入れるか」です。両者に共通する互換 CLI、エディタ、Office、AI ツールなどは、この環境を反映するために共通セットへ置いています。
+個々のパッケージは [docs/catalog.md](docs/catalog.md) を参照してください。
 
-|                                                | 開発用 (`dev`) | 普段使い (`personal`) |
-| ---------------------------------------------- | -------------- | --------------------- |
-| 共通 CLI（eza/bat/ripgrep/vim/ffmpeg など）    | ✅             | ✅                    |
-| ansible / git / vault（環境反映用）            | ✅             | ✅                    |
-| Node.js / nodenv / Java(OpenJDK) / jenv / uv   | ✅             | ✅                    |
-| VSCode / wezterm / Chrome / qview / vlc        | ✅             | ✅                    |
-| Microsoft Office 365（Word/Excel/Teams など）  | ✅             | ✅                    |
-| Discord / Slack                                | ✅             | ✅                    |
-| 共通フォント（Nerd Font / HackGen など）       | ✅             | ✅                    |
-| FileZilla（公式アーカイブ DL）                 | ✅             | ✅                    |
-| 開発系 CLI（gh/helm/maven/go など）            | ✅             | ❌                    |
-| 開発ツール Cask（Docker/Postman/Sourcetree）   | ✅             | ❌                    |
-| swiftlint / Pleiades                           | ✅             | ❌                    |
-| MAS 開発系（Xcode/TestFlight/Developer）       | ✅             | ❌                    |
-| コミュニケーション（Webex / Thunderbird）      | ❌             | ✅                    |
-| エンタメ（Kindle/LINE）                        | ❌             | ✅                    |
-| dotfiles                                       | ✅             | ✅                    |
-| npm / uv の dev 用グローバルツール             | ✅             | ❌                    |
+| | 開発用 (`dev`) | 普段使い (`personal`) |
+| --- | --- | --- |
+| 共通 CLI（eza / bat / ripgrep / vim / ffmpeg など） | ✅ | ✅ |
+| ansible / git / vault / mas | ✅ | ✅ |
+| Node.js / nodenv / OpenJDK / jenv / uv | ✅ | ✅ |
+| VS Code / wezterm / Chrome / qview / VLC | ✅ | ✅ |
+| Microsoft Office / OneDrive | ✅ | ✅ |
+| Discord / Slack | ✅ | ✅ |
+| AI アシスタント（Claude / ChatGPT / Codex / Copilot の GUI・CLI） | ✅ | ✅ |
+| Claude Code の MCP サーバ登録（11 件） | ✅ | ✅ |
+| フォント（Nerd Font / HackGen など） | ✅ | ✅ |
+| FileZilla（アーカイブの取得） | ✅ | ✅ |
+| dotfiles | ✅ | ✅（Vault からの秘密情報の復元つき） |
+| 開発系 CLI（gh / helm / maven / go など） | ✅ | ❌ |
+| Docker / Postman / Sourcetree | ✅ | ❌ |
+| swiftlint / Pleiades | ✅ | ❌ |
+| App Store の開発系（Xcode / TestFlight / Developer） | ✅ | ❌ |
+| npm / uv のグローバルツール | ✅ | ❌ |
+| コミュニケーション（Webex / Thunderbird） | ❌ | ✅ |
+| エンタメ（Kindle / LINE） | ❌ | ✅ |
+| ホスト名の用途名 | `DEV` | `OA` |
+
+## 実行時の注意
+
+**sudo のパスワード**: Microsoft Office、`docker-desktop`、`webex-meetings` のような pkg ベースの cask は、インストール中に内部で `sudo` を呼びます。
+そのため playbook は実行の冒頭で **macOS のログインパスワード**を尋ね、Ansible の `become`（`/etc/hosts` の書き換え）と、Homebrew cask 用の askpass ヘルパの両方で使います。
+`sudo make ...` は使わず、通常ユーザーで実行してください。`git` / `dotfiles` のように sudo が不要な対象だけを実行するときは、空のまま Enter で構いません。
+
+**Mac App Store**: `mas` は App Store へのサインインが必要です。失敗する場合の確認事項は [docs/operations.md](docs/operations.md) の 6 章にあります。
+
+**手作業が残るもの**: Pleiades（`~/Downloads` の DMG）と FileZilla（`.app.tar.bz2`）は、取得までを自動化しています。インストールは手作業です。
+
+## ディレクトリ構成
+
+```text
+ansible-mac/
+├── Makefile                  # エントリーポイント
+├── ansible.cfg               # Ansible 設定
+├── requirements.yml          # Ansible collection 依存関係
+├── site.yml                  # メイン playbook
+├── inventory/localhost       # ローカル実行用インベントリ
+├── group_vars/all.yml        # 共通変数（共通 packages / casks / MAS / Git / dotfiles / 取得元）
+├── vars/
+│   ├── dev.yml               # 開発用プロファイル
+│   └── personal.yml          # 普段使い用プロファイル
+├── roles/
+│   ├── homebrew/             # tap / formula / OpenJDK / cask / jenv
+│   ├── mas/                  # Mac App Store アプリ
+│   ├── xcode/                # Xcode 依存 formula
+│   ├── pleiades/             # Pleiades All in One DMG の取得
+│   ├── filezilla/            # FileZilla アーカイブの取得
+│   ├── macos/                # macOS 設定 / ホスト名 / /etc/hosts
+│   ├── git/                  # Git グローバル設定
+│   ├── dotfiles/             # dotfiles の clone/update と install
+│   └── mcp/                  # Claude Code の MCP サーバ登録
+├── scripts/
+│   └── import-app-settings.sh  # 現環境のアプリ設定を dotfiles へ取り込み
+├── .github/workflows/        # CI と版数追従 PR の自動作成
+└── docs/                     # 要件定義・基本設計・詳細設計・運用ドキュメント
+```
 
 ## CI
 
-GitHub Actions で次のチェックを実行します。
+GitHub Actions（`pull_request` と `main` への push）で、次のチェックを実行します。
 
-| チェック                          | 内容                                    |
-| --------------------------------- | --------------------------------------- |
-| `yamllint`                        | YAML のフォーマット・インデントチェック |
-| `shfmt`                           | Shell スクリプトのフォーマットチェック  |
-| `ansible-lint`                    | Ansible の静的チェック                  |
-| `ansible-playbook --syntax-check` | Playbook の構文チェック                 |
+| チェック | 内容 |
+| --- | --- |
+| `yamllint` | YAML のフォーマット・インデントチェック |
+| `shfmt` | Shell スクリプトのフォーマットチェック |
+| `ansible-lint` | Ansible の静的チェック（現状は既知の 3 件で失敗。[KI-05](docs/known-issues.md)） |
+| `ansible-playbook --syntax-check` | Playbook の構文チェック |
 
-## ロール詳細
+別に、Pleiades / FileZilla の新版を `group_vars/all.yml` に反映する PR を自動作成するワークフローがあります
+（Jenkins の Mirror Pipeline から `repository_dispatch` を受信。現状は `RELEASE_PAT` が未登録で失敗します。[KI-01](docs/known-issues.md)）。
 
-### pleiades
+## ドキュメント
 
-Pleiades All in One の公式 DMG を `curl -L` で `~/Downloads` に取得します。
-Homebrew cask では提供されていないため、DMG の取得後に Finder から開いてインストールします。
+| 文書 | 内容 |
+| --- | --- |
+| [docs/requirements.md](docs/requirements.md) | 要件定義書 |
+| [docs/basic-design.md](docs/basic-design.md) | 基本設計書 |
+| [docs/detailed-design.md](docs/detailed-design.md) | 詳細設計書（変数一覧・role ごとの処理を含む） |
+| [docs/catalog.md](docs/catalog.md) | 導入対象カタログ（formula / cask / MAS / MCP など） |
+| [docs/operations.md](docs/operations.md) | 運用手順書・トラブルシューティング |
+| [docs/testing.md](docs/testing.md) | テスト・品質 |
+| [docs/design-decisions.md](docs/design-decisions.md) | 設計判断記録 |
+| [docs/known-issues.md](docs/known-issues.md) | 既知の課題と改善候補 |
 
-| 変数                     | 説明                           | デフォルト                            |
-| ------------------------ | ------------------------------ | ------------------------------------- |
-| `pleiades_enabled`       | Pleiades DMG を取得するか      | `false`                               |
-| `pleiades_url`           | Pleiades All in One DMG の URL | `""`                                  |
-| `pleiades_download_dest` | DMG の保存先                   | `~/Downloads/pleiades-all-in-one.dmg` |
-
-既定では Pleiades All in One 2025 Java Full Edition for Mac ARM を取得します。
-公式ページでは Mac 版 All in One と Pleiades プラグインが提供されています。
-
-### filezilla
-
-FileZilla の公式アーカイブを Pleiades と同じく `curl -L` で `~/Downloads` に取得します。
-Homebrew cask では提供されていないため、取得後に手動で展開・配置します。
-
-| 変数                      | 説明                                       | デフォルト                                                                              |
-| ------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `filezilla_enabled`       | FileZilla アーカイブを取得するか           | `true`（共通）                                                                          |
-| `filezilla_version`       | DL する FileZilla クライアントのバージョン | `3.70.4`                                                                                |
-| `filezilla_url`           | FileZilla クライアントアーカイブの URL     | `https://download.filezilla-project.org/client/FileZilla_<ver>_macos-arm64.app.tar.bz2` |
-| `filezilla_download_dest` | アーカイブの保存先                         | `~/Downloads/FileZilla_<ver>_macos-arm64.app.tar.bz2`                                   |
-
-Apple Silicon 用ビルドのみ自動取得します。新版が出たら `group_vars/all.yml` の
-`filezilla_version` を更新してください（URL/保存先はテンプレートで自動追従）。
-Intel Mac の場合は `filezilla_url` を `_macos-x86.app.tar.bz2` に差し替えるか、
-SourceForge ミラーから DL してください。
-
-### import-settings
-
-現環境のアプリ設定を `~/dotfiles/home/...` に取り込みます。
-Thunderbird のパスワード DB、証明書 DB、メール本体、VS Code の `globalStorage` など、秘密情報や巨大な生成物は取り込みません。
-
-```bash
-make dotfiles
-make import-settings
-```
-
-取り込み対象:
-
-| アプリ             | 対象                                                                         |
-| ------------------ | ---------------------------------------------------------------------------- |
-| VS Code            | `settings.json`, `keybindings.json`, `tasks.json`, `snippets/`, `prompts/`   |
-| Thunderbird        | `profiles.ini`, `installs.ini`, `prefs.js`, `handlers.json`, `xulstore.json` |
-| FileZilla          | `~/.config/filezilla/`, `org.filezilla-project.filezilla.plist`              |
-| Eclipse / Pleiades | 軽量な Preferences                                                           |
-
-### homebrew
-
-Homebrew パッケージ・Cask をインストールします。
-
-| 変数                      | 説明                                                     | デフォルト |
-| ------------------------- | -------------------------------------------------------- | ---------- |
-| `homebrew_packages`       | `brew install` するパッケージ一覧                        | `[]`       |
-| `homebrew_casks`          | `brew install --cask` するアプリ一覧                     | `[]`       |
-| `homebrew_taps`           | 追加する tap 一覧                                        | `[]`       |
-| `homebrew_upgrade_all`    | 全パッケージをアップグレードするか                       | `false`    |
-| `homebrew_java_packages`  | `jenv` に追加する OpenJDK formula 一覧                   | `[]`       |
-| `xcode_homebrew_packages` | Xcode インストール後に `brew install` するパッケージ一覧 | `[]`       |
-
-#### Taps
-
-| tap             |
-| --------------- |
-| `hashicorp/tap` |
-
-#### Packages (`brew install`)
-
-共通（dev / personal どちらにも入る）:
-
-| パッケージ     | 用途                                     |
-| -------------- | ---------------------------------------- |
-| `ansible`      | 構成管理ツール（この環境を反映するため） |
-| `bat`          | cat の代替（シンタックスハイライト付き） |
-| `curl`         | HTTP クライアント                        |
-| `dos2unix`     | 改行コード変換                           |
-| `eza`          | ls の代替                                |
-| `ffmpeg`       | 動画・音声変換                           |
-| `git`          | バージョン管理                           |
-| `macmon`       | Mac リソースモニタ                       |
-| `mas`          | Mac App Store CLI                        |
-| `osx-cpu-temp` | CPU 温度モニタ                           |
-| `ripgrep`      | 高速 grep                                |
-| `telnet`       | Telnet クライアント                      |
-| `tree`         | ディレクトリツリー表示                   |
-| `vault`        | dotfiles の secrets restore で使用       |
-| `vim`          | テキストエディタ                         |
-| `wget`         | ファイルダウンロード                     |
-| `yt-dlp`       | 動画ダウンロード                         |
-| `node`         | Node.js ランタイム                       |
-| `nodenv`       | Node.js バージョン管理                   |
-| `jenv`         | Java バージョン管理                      |
-| `uv`           | Python パッケージマネージャ              |
-
-dev のみ:
-
-| パッケージ     | 用途                                  |
-| -------------- | ------------------------------------- |
-| `act`          | GitHub Actions をローカル実行         |
-| `actionlint`   | GitHub Actions の lint                |
-| `argocd`       | ArgoCD CLI                            |
-| `automake`     | ビルドツール                          |
-| `cmake`        | ビルドシステム                        |
-| `gh`           | GitHub CLI                            |
-| `go`           | Go 言語                               |
-| `helm`         | Kubernetes パッケージマネージャ       |
-| `maven`        | Java ビルドツール                     |
-| `mysql-client` | MySQL クライアント                    |
-| `nmap`         | ネットワークスキャナ                  |
-| `packer`       | イメージビルドツール（hashicorp/tap） |
-| `shfmt`        | Shell スクリプトフォーマッタ          |
-| `swiftformat`  | Swift コードフォーマッタ              |
-| `tenv`         | Terraform / OpenTofu バージョン管理   |
-| `xcodegen`     | Xcode プロジェクト生成                |
-| `zabbix`       | 監視エージェント                      |
-
-#### Java / jenv
-
-Homebrew でインストール可能な OpenJDK formula をまとめてインストールし、`jenv` に追加します。
-Apple Silicon では `openjdk@8` が x86_64 専用のため、自動的に対象から外します。
-シェルで `jenv` を有効化する設定は dotfiles 側で管理します。
-
-| パッケージ   | 用途                     |
-| ------------ | ------------------------ |
-| `openjdk`    | 最新の OpenJDK           |
-| `openjdk@8`  | Java 8（Intel Mac のみ） |
-| `openjdk@11` | Java 11                  |
-| `openjdk@17` | Java 17                  |
-| `openjdk@21` | Java 21                  |
-
-#### Xcode dependent packages
-
-`swiftlint` のように Xcode が必要な Homebrew パッケージは、Mac App Store アプリのインストール後に入れます。
-
-| パッケージ  | 用途       |
-| ----------- | ---------- |
-| `swiftlint` | Swift lint |
-
-#### Casks (`brew install --cask`)
-
-ターミナルは iTerm2 を廃止し、wezterm に完全移行しました。
-
-共通（dev / personal どちらにも入る）:
-
-| アプリ                  | 用途                          |
-| ----------------------- | ----------------------------- |
-| `visual-studio-code`    | エディタ（環境反映用）        |
-| `wezterm@nightly`       | ターミナル                    |
-| `google-chrome`         | ブラウザ                      |
-| `qview`                 | 画像ビューア                  |
-| `vlc`                   | メディアプレイヤー            |
-| `microsoft-word`        | Word                          |
-| `microsoft-excel`       | Excel                         |
-| `microsoft-powerpoint`  | PowerPoint                    |
-| `microsoft-outlook`     | Outlook                       |
-| `microsoft-onenote`     | OneNote                       |
-| `microsoft-teams`       | Teams                         |
-| `onedrive`              | OneDrive                      |
-| `discord`               | チャット                      |
-| `slack`                 | チャット                      |
-| `font-hack-nerd-font`   | Nerd Font                     |
-| `font-hackgen`          | HackGen フォント              |
-| `font-hackgen-nerd`     | HackGen Nerd フォント         |
-| `font-jetbrains-mono`   | JetBrains Mono フォント       |
-
-dev のみ:
-
-| アプリ                     | 用途                      |
-| -------------------------- | ------------------------- |
-| `claude-code`              | Claude Code CLI           |
-| `docker`                   | Docker CLI                |
-| `docker-desktop`           | Docker Desktop            |
-| `github-copilot-for-xcode` | Xcode 向け GitHub Copilot |
-| `postman`                  | API クライアント          |
-| `sourcetree`               | Git GUI クライアント      |
-
-personal のみ:
-
-| アプリ           | 用途               |
-| ---------------- | ------------------ |
-| `thunderbird`    | メールクライアント |
-| `webex`          | ビデオ会議         |
-| `webex-meetings` | ビデオ会議         |
-
-### mas
-
-Mac App Store アプリをインストールします。事前に App Store へのサインインが必要です。
-
-| 変数       | 説明                                             | デフォルト |
-| ---------- | ------------------------------------------------ | ---------- |
-| `mas_apps` | インストールするアプリの `id` と `name` のリスト | `[]`       |
-
-#### App Store アプリ一覧
-
-| アプリ             | App Store ID | dev | personal |
-| ------------------ | ------------ | --- | -------- |
-| Developer          | 640199958    | ✅  | ❌       |
-| Kindle             | 302584613    | ❌  | ✅       |
-| LanguageTranslator | 1218781096   | ✅  | ✅       |
-| LINE               | 539883307    | ❌  | ✅       |
-| PL2303Serial       | 1624835354   | ✅  | ❌       |
-| Tailscale          | 1475387142   | ✅  | ✅       |
-| TestFlight         | 899247664    | ✅  | ❌       |
-| Windows App        | 1295203466   | ✅  | ✅       |
-| WireGuard          | 1451685025   | ✅  | ✅       |
-| Xcode              | 497799835    | ✅  | ❌       |
-
-### macos
-
-macOS のシステム設定を変更します。
-
-| 変数                                  | 説明                                                      | デフォルト                                          |
-| ------------------------------------- | --------------------------------------------------------- | --------------------------------------------------- |
-| `macos_show_hidden_files`             | 隠しファイルを表示する                                    | `true`                                              |
-| `macos_show_all_filename_extensions`  | 拡張子を常に表示する                                      | `true`                                              |
-| `macos_disable_auto_correct`          | 自動修正を無効にする                                      | `true`                                              |
-| `macos_key_repeat_rate`               | キーリピート速度                                          | `2`                                                 |
-| `macos_key_repeat_delay`              | キーリピートの遅延                                        | `15`                                                |
-| `macos_dock_autohide`                 | Dock を自動的に隠す                                       | `true`                                              |
-| `macos_dock_icon_size`                | Dock のアイコンサイズ                                     | `48`                                                |
-| `macos_screenshots_dir`               | スクリーンショット保存先                                  | `~/Desktop/screenshots`                             |
-| `macos_hostname_manage`               | Mac の ComputerName / HostName / LocalHostName を設定する | `true`                                              |
-| `macos_hostname_device_name`          | PC 名に使うデバイス名（空なら Mac のモデルから自動判定）  | `""`                                                |
-| `macos_hostname_purpose`              | PC 名に使う用途名（`dev` / `home` など）                  | `""`                                                |
-| `macos_hostname_serial_suffix_length` | PC 名に付けるシリアル末尾の文字数（`0` なら全体）         | `0`                                                 |
-| `macos_internal_dns_vip`              | 社内 LAN 経由で参照する内部 VIP                           | `192.168.20.10`                                     |
-| `macos_internal_dns_entries`          | `/etc/hosts` で内部 VIP に向けたい FQDN 一覧              | `nexus-cli.sk4869.info`, `nexus-docker.sk4869.info` |
-
-PC 名は `MACBOAシリアル値` や `MACMDEVシリアル値` のようにすべて大文字・区切りなしで設定します。
-デバイス名は `hw.model` から `MACM`(Mac mini) / `MACB`(MacBook) / `IMAC`(iMac) / `MACS`(Mac Studio) / `MACP`(Mac Pro) に自動判定します。
-`dev` プロファイルでは `DEV`、`personal` プロファイルでは `OA` を用途名に使います。
-
-`macos_internal_dns_entries` で指定した FQDN は、`/etc/hosts` の `# BEGIN/END ANSIBLE MANAGED: internal sk4869.info` ブロックで管理されます（Cloudflare をバイパスして社内 VIP に直接ルーティング）。`/etc/hosts` への書き込みは `sudo` が必要なので、`make dev` / `make personal` 経由（開始時にパスワードを尋ねる）で実行してください。
-
-### git
-
-Git のグローバル設定を行います。
-
-| 変数                 | 説明                 | デフォルト |
-| -------------------- | -------------------- | ---------- |
-| `git_user_name`      | `user.name`          | `""`       |
-| `git_user_email`     | `user.email`         | `""`       |
-| `git_default_branch` | `init.defaultBranch` | `main`     |
-| `git_core_editor`    | `core.editor`        | `vim`      |
-
-### dotfiles
-
-dotfiles リポジトリを clone/update し、`install.sh` を実行して `home/` 配下の設定ファイルを `$HOME` にシンボリックリンクします。
-
-| 変数                       | 説明                                           | デフォルト                                     |
-| -------------------------- | ---------------------------------------------- | ---------------------------------------------- |
-| `dotfiles_repo`            | dotfiles リポジトリ URL                        | `https://github.com/YukiOno-1015/dotfiles.git` |
-| `dotfiles_dest`            | clone 先ディレクトリ                           | `~/dotfiles`                                   |
-| `dotfiles_version`         | checkout するブランチ / タグ / コミット        | `main`                                         |
-| `dotfiles_update`          | 既存 clone を更新するか                        | `true`                                         |
-| `dotfiles_install_command` | clone 後に実行するコマンド（空なら実行しない） | `./install.sh`                                 |
+全体の索引は [docs/README.md](docs/README.md) です。
