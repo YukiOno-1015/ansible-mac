@@ -1,0 +1,88 @@
+---
+# docs/ を GitHub Wiki へ一方向にミラーする。正本は docs/ で、Wiki 上の手動編集は次回の同期で上書きされる。
+#
+#   pull_request      : docs/ の変換とリンクを検査するだけ（Wiki には書かない）
+#   push (main)       : docs/ を Wiki へ反映する
+#   workflow_dispatch : 手動で反映する
+#
+# 前提:
+#   - Wiki の最初のページを Web 画面で作成済みであること（作成するまで <repo>.wiki.git は存在しない）
+#   - 書き込みは GITHUB_TOKEN（contents: write）で行う。403 になる場合は、repo スコープの PAT を
+#     Secrets の WIKI_TOKEN に登録する。登録されていればそちらを優先して使う
+name: Sync docs to Wiki
+
+"on":
+  pull_request:
+    paths:
+      - docs/**
+      - scripts/sync-wiki.sh
+      - .github/workflows/sync-wiki.yml
+  push:
+    branches:
+      - main
+    paths:
+      - docs/**
+      - scripts/sync-wiki.sh
+      - .github/workflows/sync-wiki.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Wiki pages
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Generate pages without publishing
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/wiki-check"
+          scripts/sync-wiki.sh "${RUNNER_TEMP}/wiki-check"
+
+  sync:
+    name: Mirror docs/ to Wiki
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: sync-wiki
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Clone Wiki
+        env:
+          WIKI_TOKEN: ${{ secrets.WIKI_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          url="https://x-access-token:${WIKI_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git"
+          if ! git clone --quiet "${url}" "${RUNNER_TEMP}/wiki"; then
+            echo "::error::Wiki を clone できません。最初のページを作成済みか、トークンの権限を確認してください"
+            exit 1
+          fi
+
+      - name: Generate pages from docs/
+        run: scripts/sync-wiki.sh "${RUNNER_TEMP}/wiki"
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          cd "${RUNNER_TEMP}/wiki"
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Wiki に差分なし。push しない。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "docs: ${GITHUB_SHA::7} の docs/ を反映"
+          git push origin HEAD

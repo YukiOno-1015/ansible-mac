@@ -2,7 +2,7 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 最終更新 | 2026-10-24（`main` @ `a5e36ad` 時点） |
+| 最終更新 | 2026-10-24（`main` @ `dae2319` ＋ Wiki ミラー追加時点） |
 | 上位文書 | [basic-design.md](basic-design.md)（構成・実行モデル・セキュリティ） |
 | 対象 | `Makefile`、Ansible 設定、変数、各 role、スクリプト、GitHub Actions |
 
@@ -353,7 +353,9 @@ flowchart TD
 - 登録済みのサーバは更新しません。定義を変えたときは `claude mcp remove <name> --scope user` の後に再実行します
 - `mcp_servers` の各要素は `name` と `config`（`claude mcp add-json` に渡す JSON）です。一覧は [catalog.md](catalog.md) を参照してください
 
-## 5. `scripts/import-app-settings.sh`
+## 5. スクリプト
+
+### 5.1 `scripts/import-app-settings.sh`
 
 現環境のアプリ設定を `$DOTFILES_DIR/home/...`（既定 `~/dotfiles/home`）にコピーします。
 
@@ -367,6 +369,41 @@ flowchart TD
 | 書式 | `shfmt -d -i 2 -ci`（CI が検査）、`set -euo pipefail` |
 
 コピー後は `~/dotfiles` で差分を確認し、秘密情報が無いことを見てからコミットします。
+
+### 5.2 `scripts/sync-wiki.sh`
+
+`docs/` を、clone 済みの GitHub Wiki のディレクトリへ変換して書き出します。commit と push は呼び出し側（`sync-wiki.yml`）が行います。
+
+| 項目 | 内容 |
+| --- | --- |
+| 実行 | `scripts/sync-wiki.sh <wiki-dir>`（`<wiki-dir>` は `<repo>.wiki.git` の clone） |
+| 環境変数 | `DOCS_DIR`（既定 `docs/`）、`GITHUB_REPOSITORY`（既定 `YukiOno-1015/ansible-mac`。URL の生成に使う）、`DOCS_REF`（既定 `main`。リポジトリ上のリンク先の ref） |
+| 定数 | `PAGE_ORDER`（サイドバーの順序。載っていない文書は、末尾にアルファベット順）、`MARKER_ID` と `MARKER`（生成ページの目印） |
+| 出力 | `Home.md`（`docs/README.md` から）、`<name>.md`（`docs/<name>.md` から）、`_Sidebar.md`、`_Footer.md`。いずれも先頭にマーカーの HTML コメントを付ける |
+| 異常終了 | 引数がない、`<wiki-dir>` がない、`docs/README.md` がない、リンク検査に失敗のいずれかで終了コード 1 |
+| 書式 | `shfmt -d -i 2 -ci`（CI が検査）、`set -euo pipefail`。bash 4 以降の機能は使わず、`sed -E` / `awk` / `grep -E` は macOS と Linux で共通に動く書き方にする |
+
+処理の流れは次のとおりです。
+
+1. 引数と `docs/README.md` を確認する
+2. 一時ディレクトリ（`STAGING_DIR`）に、全ページを生成する（`generate_pages`、`build_sidebar`、`build_footer`）
+3. `check_links` で、生成したページのリンクを検査する（コードブロックの外だけ）
+4. 検査を通ったら `publish` で、生成物を `<wiki-dir>` へコピーし、`docs/` から消えたページのうちマーカーがあるものを削除する
+5. 一時ディレクトリを、`trap` で終了時に削除する
+
+Markdown リンクの宛先は、次のとおり変換します（`rewrite_links`）。
+
+| 変換前の宛先 | 変換後の宛先 |
+| --- | --- |
+| `../README.md` | リポジトリ上の README の URL（`https://github.com/<repo>/blob/<ref>/README.md`） |
+| `README.md`、`README.md#見出し` | `Home`、`Home#見出し` |
+| `<name>.md`、`<name>.md#見出し` | `<name>`、`<name>#見出し`（`<name>` は英数字・`_`・`-`） |
+| `#見出し`、`https://...` | 変換しない |
+| コードブロックの中 | 変換しない |
+
+`check_links` は、変換後のリンクの宛先が、生成したページの名前（`https://` などの外部リンクと `#見出し` を除く）と一致することを確かめます。
+存在しないページや、`.md` やパスを含む宛先が残っていれば失敗します。この検査はインラインコードも区別しないため、
+文書の中でリンクの書き方を説明するときは、括弧付きのリンク記法をコードとして書かないでください。
 
 ## 6. GitHub Actions
 
@@ -407,6 +444,26 @@ flowchart TD
 
 PR 本文には、イベント種別・概要・発火元の Jenkins（`client_payload.jenkins`）を載せます。
 コミットの作者は `github-actions[bot]` です。
+
+### 6.3 `sync-wiki.yml`
+
+設計は [basic-design.md](basic-design.md) の 8.4 を参照してください。
+
+| 項目 | 内容 |
+| --- | --- |
+| トリガー | `pull_request` と `push`（`main`）。どちらも `docs/**`、`scripts/sync-wiki.sh`、ワークフロー自身の変更に限る。加えて `workflow_dispatch` |
+| 権限 | 既定は `contents: read`。`sync` ジョブだけ `contents: write` |
+| `validate` ジョブ | `pull_request` のときだけ。空のディレクトリへ出力して、変換とリンク検査を行う。タイムアウト 5 分 |
+| `sync` ジョブ | `push` と手動実行のとき。`concurrency.group: sync-wiki`、`cancel-in-progress: false`。タイムアウト 10 分 |
+
+`sync` ジョブのステップは次のとおりです。
+
+| 順 | ステップ | 内容 |
+| --- | --- | --- |
+| 1 | Checkout | `actions/checkout@v5` |
+| 2 | Clone Wiki | `https://x-access-token:<token>@github.com/<repo>.wiki.git` を `${RUNNER_TEMP}/wiki` へ clone する。`<token>` は `secrets.WIKI_TOKEN` があればそれ、なければ `GITHUB_TOKEN`。失敗したら `::error::` で原因の候補を出して終了する |
+| 3 | Generate pages from docs/ | `scripts/sync-wiki.sh "${RUNNER_TEMP}/wiki"` |
+| 4 | Commit and push | `git status --porcelain` が空なら何もしない。差分があれば `github-actions[bot]` で `docs: <sha7> の docs/ を反映` を commit し、`git push origin HEAD` |
 
 ## 7. lint 設定とコーディング規約
 

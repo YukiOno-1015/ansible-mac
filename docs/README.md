@@ -41,6 +41,15 @@ flowchart LR
   ops["operations.md<br/>運用手順"]
 ```
 
+## GitHub Wiki
+
+`docs/` は [GitHub Wiki](https://github.com/YukiOno-1015/ansible-mac/wiki) にも自動で反映されます。**正本は `docs/` で、反映は一方向**です。Wiki 上で編集しても、次の同期で上書きされます。
+
+- `docs/` の変更を `main` にマージすると、ワークフロー `Sync docs to Wiki` が Wiki を更新します
+- `docs/README.md` が Wiki の `Home` に、それ以外は同じ名前のページになります。サイドバーとフッターは自動で生成します
+- `docs/` 内のリンクは、`xxx.md`、`xxx.md#見出し`、`../README.md` の形だけを使ってください。Wiki 用に自動で変換します。それ以外の形のリンクは、PR の `Validate Wiki pages` が失敗します
+- 仕組みは [basic-design.md](basic-design.md) の 8.4、手順は [operations.md](operations.md) の 3.7 を参照してください
+
 ## ID の体系
 
 | 接頭辞 | 意味 | 定義場所 |
@@ -72,4 +81,5 @@ flowchart LR
 | 設計方針の変更 | [design-decisions.md](design-decisions.md) に新しい ADR を追加、[basic-design.md](basic-design.md) |
 | 手順の変更 | [operations.md](operations.md) |
 | ワークフローの変更 | [detailed-design.md](detailed-design.md) の 6 章、[basic-design.md](basic-design.md) の 8 章 |
+| 文書の追加・改名・削除 | `scripts/sync-wiki.sh` の `PAGE_ORDER`（Wiki のサイドバーの順序）。リンクの書き方は上の「GitHub Wiki」を参照 |
 | 不具合の発見・解消 | [known-issues.md](known-issues.md)（解消したら削除し、参照している文書も直す） |
