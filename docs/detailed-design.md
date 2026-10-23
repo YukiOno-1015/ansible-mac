@@ -461,7 +461,7 @@ PR 本文には、イベント種別・概要・発火元の Jenkins（`client_p
 | 順 | ステップ | 内容 |
 | --- | --- | --- |
 | 1 | Checkout | `actions/checkout@v5` |
-| 2 | Clone Wiki | `https://x-access-token:<token>@github.com/<repo>.wiki.git` を `${RUNNER_TEMP}/wiki` へ clone する。`<token>` は `secrets.WIKI_TOKEN` があればそれ、なければ `GITHUB_TOKEN`。失敗したら `::error::` で原因の候補を出して終了する |
+| 2 | Clone Wiki | `https://x-access-token:<token>@github.com/<repo>.wiki.git` を `${RUNNER_TEMP}/wiki` へ clone する。`<token>` は `GITHUB_TOKEN`。失敗したら `::error::` で原因の候補を出して終了する |
 | 3 | Generate pages from docs/ | `scripts/sync-wiki.sh "${RUNNER_TEMP}/wiki"` |
 | 4 | Commit and push | `git status --porcelain` が空なら何もしない。差分があれば `github-actions[bot]` で `docs: <sha7> の docs/ を反映` を commit し、`git push origin HEAD` |
 

@@ -158,8 +158,8 @@ mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check   # ローカ�
 文書を追加・改名したときは、`scripts/sync-wiki.sh` の `PAGE_ORDER`（サイドバーの順序）も直します。
 前提として、Wiki の最初のページが作成済みであること。
 
-書き込みは `GITHUB_TOKEN` だけで動きます（初回の同期で確認済み）。Secrets に `WIKI_TOKEN` があると、そちらを優先して使うため、通常は登録不要です。
-登録している場合は、PAT の失効やスコープ不足で同期が失敗する点に注意してください（不要なら削除すると `GITHUB_TOKEN` に戻ります）。
+書き込みは `GITHUB_TOKEN` だけで行います（初回の同期で確認済み）。PAT は使わないため、Secrets に `WIKI_TOKEN` などがあっても無視されます。
+かつては `WIKI_TOKEN` を優先する作りでしたが、登録された PAT で push が 403 になり、同期が失敗したため、やめました（ADR-15）。
 失敗時の対処は、6 章のトラブルシューティングを参照してください。
 
 ## 4. 版数の更新（Pleiades / FileZilla）
@@ -171,7 +171,7 @@ mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check   # ローカ�
 3. PR をレビューして、マージする
 4. 各 Mac で再実行して新版を取得する（`ansible-playbook site.yml --tags filezilla`、`--tags pleiades -e @vars/dev.yml`）
 
-現在は `RELEASE_PAT` が未登録のため、手順 2 が失敗します（KI-01）。Wiki ミラーの `WIKI_TOKEN` とは別のシークレットです。
+現在は `RELEASE_PAT` が未登録のため、手順 2 が失敗します（KI-01）。Secrets にある `WIKI_TOKEN` は、どのワークフローも使わない別のシークレットです。
 `repo` スコープの PAT を、次のコマンドで登録します。値は対話プロンプトに貼り付け、コマンドラインや会話には書きません。
 
 ```bash
@@ -239,7 +239,7 @@ echo '{"event_type":"update-filezilla","client_payload":{"version":"<現在と�
 | CI が赤い | 既知の `yaml[line-length]` 3 件（KI-05） | ログで違反箇所が 3 件のままか確認する。増えていれば新しい違反 |
 | 更新ワークフローが `Input required and not supplied: token` で失敗 | `RELEASE_PAT` が未登録（KI-01） | 4.1 の手順で登録する |
 | 中断した後、`ansible.*askpass` というディレクトリが残っている | クリーンアップされなかった（KI-10） | `ls -d "${TMPDIR%/}"/ansible.*askpass` で確認し、内容を見て削除する |
-| `Sync docs to Wiki` が `Wiki を clone できません` で失敗 | Wiki の最初のページが未作成、またはトークンに権限がない | Web 画面で Wiki の最初のページを作る。権限エラー（403）のときは、`repo` スコープの PAT を `gh secret set WIKI_TOKEN --repo YukiOno-1015/ansible-mac` で登録して再実行する。すでに `WIKI_TOKEN` を登録している場合は、PAT の有効期限とスコープを確認する（削除すれば `GITHUB_TOKEN` に戻る） |
+| `Sync docs to Wiki` が `Wiki を clone できません` で失敗 | Wiki の最初のページが未作成、または `GITHUB_TOKEN` の権限が足りない | Web 画面で Wiki の最初のページを作る。`Permission ... denied`（403）のときは、ワークフローの `permissions: contents: write` と、リポジトリの Settings にある Actions の Workflow permissions を確認する |
 | PR の `Validate Wiki pages` が `link to a missing page` / `relative file link remains` で失敗 | `docs/` 内のリンクが、Wiki に変換できない形 | リンクを `xxx.md`、`xxx.md#見出し`、`../README.md` の形にする。存在しない文書へのリンクを直す。リンク記法をコードとして書いている箇所は、書き方を変える |
 | Wiki の表示が `docs/` と違う | Wiki 上で直接編集した（次の同期で上書きされる） | `docs/` を直し、`Sync docs to Wiki` を手動で実行して戻す |
 

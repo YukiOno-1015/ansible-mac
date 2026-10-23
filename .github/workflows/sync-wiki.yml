@@ -7,8 +7,8 @@
 #
 # 前提:
 #   - Wiki の最初のページを Web 画面で作成済みであること（作成するまで <repo>.wiki.git は存在しない）
-#   - 書き込みは GITHUB_TOKEN（contents: write）で行う。403 になる場合は、repo スコープの PAT を
-#     Secrets の WIKI_TOKEN に登録する。登録されていればそちらを優先して使う
+#   - 書き込みは GITHUB_TOKEN（contents: write）だけで行う。PAT は使わない
+#     （Secrets に PAT があっても無視する。優先すると、権限の足りない PAT で push が 403 になった）
 name: Sync docs to Wiki
 
 "on":
@@ -61,10 +61,10 @@ jobs:
 
       - name: Clone Wiki
         env:
-          WIKI_TOKEN: ${{ secrets.WIKI_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          url="https://x-access-token:${WIKI_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git"
+          url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git"
           if ! git clone --quiet "${url}" "${RUNNER_TEMP}/wiki"; then
             echo "::error::Wiki を clone できません。最初のページを作成済みか、トークンの権限を確認してください"
             exit 1

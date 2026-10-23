@@ -341,6 +341,7 @@ mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check
 | `Sync docs to Wiki`（`main` への push、初回） | 成功。**`GITHUB_TOKEN` だけで Wiki に push できた**。bot の commit が 1 つ入り、内容は `docs/` から生成し直した結果と完全に一致 |
 | 公開された Wiki の表示（ブラウザ） | サイドバーの全リンクが 200 で開く。フッター、表、Mermaid 図が表示される。マーカーの HTML コメントは見えない |
 | `Sync docs to Wiki`（手動実行、`WIKI_TOKEN` の登録後） | 成功。`WIKI_TOKEN` でも clone できる。差分がなかったため push はしていない |
+| `Sync docs to Wiki`（`docs/` の変更を `main` へマージした後、`WIKI_TOKEN` を優先する構成） | **失敗**。push が `Permission to ...wiki.git denied`（403）で拒否された。登録された PAT は、clone はできても Wiki に書き込めない。PAT を使わない構成（`GITHUB_TOKEN` のみ）に変更した |
 | Nexus の格納物と `group_vars/all.yml` の比較 | FileZilla は 3.71.1、Pleiades は 2026-09 まで格納済みだが、`group_vars/all.yml` は 3.70.6 と 2026-03 のまま。失敗した 4 回の実行は、格納時刻と一致する（KI-01） |
 | `gh secret list` | `WIKI_TOKEN` のみ。`RELEASE_PAT` は未登録（KI-01） |
 
