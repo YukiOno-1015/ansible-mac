@@ -2,7 +2,7 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 最終更新 | 2026-10-24（`main` @ `dae2319` ＋ Wiki ミラー追加時点） |
+| 最終更新 | 2026-10-24（`main` @ `666591a` 時点） |
 | 対応する要件 | [requirements.md](requirements.md) の FR-xx / NFR-xx / AC-xx |
 | 関連 | CI の設計は [basic-design.md](basic-design.md) の 8 章、既知の不具合は [known-issues.md](known-issues.md) |
 
@@ -337,6 +337,11 @@ mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check
 | `scripts/sync-wiki.sh` を、Wiki の複製に実行（macOS） | 11 ページを生成。元の `docs/` との差分は、リンクの宛先の変換とマーカー行だけ。2 回目は差分なし。マーカー付きの孤立ページは削除され、手書きのページは残る。リンク切れを混ぜると、何も書かずに終了コード 1 |
 | `sync-wiki.yml` の `run:` を、ローカルの bare リポジトリに実行 | clone・commit・push、差分なし時のスキップ、clone 失敗時のエラー表示を確認 |
 | `yamllint` / `actionlint`（`sync-wiki.yml`）、`shfmt`（`sync-wiki.sh`） | 指摘なし |
+| PR の `Validate Wiki pages`（Linux） | 成功。11 ページを生成 |
+| `Sync docs to Wiki`（`main` への push、初回） | 成功。**`GITHUB_TOKEN` だけで Wiki に push できた**。bot の commit が 1 つ入り、内容は `docs/` から生成し直した結果と完全に一致 |
+| 公開された Wiki の表示（ブラウザ） | サイドバーの全リンクが 200 で開く。フッター、表、Mermaid 図が表示される。マーカーの HTML コメントは見えない |
+| `Sync docs to Wiki`（手動実行、`WIKI_TOKEN` の登録後） | 成功。`WIKI_TOKEN` でも clone できる。差分がなかったため push はしていない |
+| Nexus の格納物と `group_vars/all.yml` の比較 | FileZilla は 3.71.1、Pleiades は 2026-09 まで格納済みだが、`group_vars/all.yml` は 3.70.6 と 2026-03 のまま。失敗した 4 回の実行は、格納時刻と一致する（KI-01） |
+| `gh secret list` | `WIKI_TOKEN` のみ。`RELEASE_PAT` は未登録（KI-01） |
 
 新規の Mac での通し実行（`make init` → `make dev` / `make personal`）は、この時点では実施していません。
-Wiki への実際の push（`GITHUB_TOKEN` の権限）は、マージ後の初回実行で確認します。

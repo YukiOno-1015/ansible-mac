@@ -2,7 +2,7 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 最終更新 | 2026-10-24（`main` @ `dae2319` ＋ Wiki ミラー追加時点） |
+| 最終更新 | 2026-10-24（`main` @ `666591a` 時点） |
 | 対象 | セットアップ、日常運用、版数の更新、変更の進め方、トラブルシューティング |
 | 関連 | 仕組みは [basic-design.md](basic-design.md)、既知の不具合は [known-issues.md](known-issues.md) |
 
@@ -156,7 +156,11 @@ mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check   # ローカ�
 
 `docs/` 内のリンクは、`xxx.md`、`xxx.md#見出し`、`../README.md` の形だけを使います。
 文書を追加・改名したときは、`scripts/sync-wiki.sh` の `PAGE_ORDER`（サイドバーの順序）も直します。
-前提として、Wiki の最初のページが作成済みであること。認証や失敗時の対処は、6 章のトラブルシューティングを参照してください。
+前提として、Wiki の最初のページが作成済みであること。
+
+書き込みは `GITHUB_TOKEN` だけで動きます（初回の同期で確認済み）。Secrets に `WIKI_TOKEN` があると、そちらを優先して使うため、通常は登録不要です。
+登録している場合は、PAT の失効やスコープ不足で同期が失敗する点に注意してください（不要なら削除すると `GITHUB_TOKEN` に戻ります）。
+失敗時の対処は、6 章のトラブルシューティングを参照してください。
 
 ## 4. 版数の更新（Pleiades / FileZilla）
 
@@ -167,8 +171,8 @@ mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check   # ローカ�
 3. PR をレビューして、マージする
 4. 各 Mac で再実行して新版を取得する（`ansible-playbook site.yml --tags filezilla`、`--tags pleiades -e @vars/dev.yml`）
 
-現在は `RELEASE_PAT` が未登録のため、手順 2 が失敗します（KI-01）。`repo` スコープの PAT を、次のコマンドで登録します。
-値は対話プロンプトに貼り付け、コマンドラインや会話には書きません。
+現在は `RELEASE_PAT` が未登録のため、手順 2 が失敗します（KI-01）。Wiki ミラーの `WIKI_TOKEN` とは別のシークレットです。
+`repo` スコープの PAT を、次のコマンドで登録します。値は対話プロンプトに貼り付け、コマンドラインや会話には書きません。
 
 ```bash
 gh secret set RELEASE_PAT --repo YukiOno-1015/ansible-mac
@@ -228,14 +232,14 @@ echo '{"event_type":"update-filezilla","client_payload":{"version":"<現在と�
 | `--check` で `object of type 'dict' has no attribute 'path'` | check モードで askpass の一時ディレクトリが作られない（KI-02） | パスワードを空にして実行する。ただし `/etc/hosts` のタスクが失敗する |
 | `--check` で `sudo: a password is required`（`/etc/hosts`） | 昇格に必要なパスワードがない（KI-02） | role を絞った `--check` を使う（3.3 を参照） |
 | `curl: (22) The requested URL returned error: 404` | Nexus に該当の版数・ファイルがない、または到達できない | 4.2 の `curl -sfI` で URL を確認する。`*_version` / `*_release` を Nexus の内容に合わせる |
-| FileZilla が Intel Mac で動かない | 取得するのは arm64 用 | `filezilla_filename` と `filezilla_url` を x86 用（`..._macos-x86.app.tar.bz2`）に差し替える。Nexus に無ければ公式から取得する |
+| FileZilla が Intel Mac で動かない | 取得するのは arm64 用 | `filezilla_filename` と `filezilla_url` を x86 用（`..._macos-x86.app.tar.bz2`）に差し替える。Nexus にも x86 用が格納されている（2026-10-24 に確認） |
 | `claude CLI が見つからないため MCP 登録をスキップします` | `claude-code` cask が未導入、または PATH にない | `homebrew` を実行して導入し、新しいシェルで `mcp` を再実行する |
 | MCP サーバが認証エラー、または起動しない | `~/.secrets.env` がない（KI-08）、または Docker がない（KI-09） | 2.2 の手順で復元する。`claude mcp list` で状態を見る |
 | MCP の定義を変えたのに反映されない | 登録済みは更新しない仕様 | `claude mcp remove <name> --scope user` の後に再実行する |
 | CI が赤い | 既知の `yaml[line-length]` 3 件（KI-05） | ログで違反箇所が 3 件のままか確認する。増えていれば新しい違反 |
 | 更新ワークフローが `Input required and not supplied: token` で失敗 | `RELEASE_PAT` が未登録（KI-01） | 4.1 の手順で登録する |
 | 中断した後、`ansible.*askpass` というディレクトリが残っている | クリーンアップされなかった（KI-10） | `ls -d "${TMPDIR%/}"/ansible.*askpass` で確認し、内容を見て削除する |
-| `Sync docs to Wiki` が `Wiki を clone できません` で失敗 | Wiki の最初のページが未作成、またはトークンに権限がない | Web 画面で Wiki の最初のページを作る。権限エラー（403）のときは、`repo` スコープの PAT を `gh secret set WIKI_TOKEN --repo YukiOno-1015/ansible-mac` で登録して再実行する |
+| `Sync docs to Wiki` が `Wiki を clone できません` で失敗 | Wiki の最初のページが未作成、またはトークンに権限がない | Web 画面で Wiki の最初のページを作る。権限エラー（403）のときは、`repo` スコープの PAT を `gh secret set WIKI_TOKEN --repo YukiOno-1015/ansible-mac` で登録して再実行する。すでに `WIKI_TOKEN` を登録している場合は、PAT の有効期限とスコープを確認する（削除すれば `GITHUB_TOKEN` に戻る） |
 | PR の `Validate Wiki pages` が `link to a missing page` / `relative file link remains` で失敗 | `docs/` 内のリンクが、Wiki に変換できない形 | リンクを `xxx.md`、`xxx.md#見出し`、`../README.md` の形にする。存在しない文書へのリンクを直す。リンク記法をコードとして書いている箇所は、書き方を変える |
 | Wiki の表示が `docs/` と違う | Wiki 上で直接編集した（次の同期で上書きされる） | `docs/` を直し、`Sync docs to Wiki` を手動で実行して戻す |
 

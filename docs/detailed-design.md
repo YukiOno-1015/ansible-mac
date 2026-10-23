@@ -2,7 +2,7 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 最終更新 | 2026-10-24（`main` @ `dae2319` ＋ Wiki ミラー追加時点） |
+| 最終更新 | 2026-10-24（`main` @ `666591a` 時点） |
 | 上位文書 | [basic-design.md](basic-design.md)（構成・実行モデル・セキュリティ） |
 | 対象 | `Makefile`、Ansible 設定、変数、各 role、スクリプト、GitHub Actions |
 
