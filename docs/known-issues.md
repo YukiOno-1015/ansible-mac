@@ -16,7 +16,6 @@
 
 | ID | 重要度 | 概要 |
 | --- | --- | --- |
-| [KI-01](#ki-01-版数追従ワークフローが毎回失敗する) | 高 | 版数追従ワークフローが毎回失敗する（`RELEASE_PAT` 未登録） |
 | [KI-02](#ki-02-ドライランが完走しない) | 高 | ドライラン（`make check-*`）が完走しない |
 | [KI-03](#ki-03-部分実行ターゲットがプロファイルを引き継がない) | 高 | 部分実行ターゲットがプロファイルを引き継がない |
 | [KI-14](#ki-14-dock-の-tilesize-が-float-だと-macos-role-が失敗する) | 高 | Dock の `tilesize` が float だと `macos` role が失敗する |
@@ -30,28 +29,6 @@
 | [KI-11](#ki-11-homebrew_upgrade_all-は未使用) | 低 | `homebrew_upgrade_all` は未使用 |
 | [KI-12](#ki-12-homebrew-の存在判定が-apple-silicon-固定) | 低 | Homebrew の存在判定が Apple Silicon 固定 |
 | [KI-13](#ki-13-ダウンロードの完全性を検証しない) | 低 | ダウンロードの完全性を検証しない |
-
-## KI-01 版数追従ワークフローが毎回失敗する
-
-| 項目 | 内容 |
-| --- | --- |
-| 事象 | `Update mac app version` が `repository_dispatch` で起動するものの、最初の checkout で `##[error]Input required and not supplied: token` となり失敗する |
-| 確認 | 実行履歴 4 件（2026-07-15、2026-08-19、2026-08-26、2026-10-16）がすべて失敗。後の 2 件はログでエラー文言を確認 |
-| 原因 | `secrets.RELEASE_PAT` が未登録。2026-10-24 時点で Secrets にあるのは `WIKI_TOKEN` だけで、`RELEASE_PAT` とは別のシークレット（`gh secret list` で確認）。`WIKI_TOKEN` は、どのワークフローも使わない |
-| 影響 | Jenkins が Nexus に新版を置いても追従 PR が作られない。2026-10-24 時点で、Nexus には FileZilla 3.71.0 / 3.71.1 と Pleiades 2026-06 / 2026-09 があるが、`group_vars/all.yml` は FileZilla 3.70.6 と Pleiades 2026-03 のまま（失敗した 4 回の実行は、これらの格納時刻と一致する）。Jenkins は dispatch が GitHub に受理された時点で成功と見なし、受信側（Actions）の失敗を知らないため、気付きにくい |
-| 対応 | `RELEASE_PAT`（`repo` スコープの PAT）を登録する。値はコマンドラインや会話に書かず、対話入力で貼り付ける<br/>`gh secret set RELEASE_PAT --repo YukiOno-1015/ansible-mac` |
-| 確認方法 | [operations.md](operations.md) の「版数の更新」にあるテスト用 dispatch で PR が作られること |
-| 参考 | 追従の仕組みは [basic-design.md](basic-design.md) の 8.2 |
-
-登録したあと、取り残された更新は、最新の版を指定して dispatch すれば反映できます。失敗した実行の再実行は、30 日を過ぎたものにはできません。
-次の値は 2026-10-24 時点の Nexus の最新です。実行前に Nexus と `group_vars/all.yml` を見直してください。
-
-```bash
-echo '{"event_type":"update-filezilla","client_payload":{"version":"3.71.1","jenkins":"manual"}}' \
-  | gh api repos/YukiOno-1015/ansible-mac/dispatches --input -
-echo '{"event_type":"update-pleiades","client_payload":{"release":"2026-09","buildDate":"20261016","jenkins":"manual"}}' \
-  | gh api repos/YukiOno-1015/ansible-mac/dispatches --input -
-```
 
 ## KI-02 ドライランが完走しない
 
@@ -188,7 +165,7 @@ echo '{"event_type":"update-pleiades","client_payload":{"release":"2026-09","bui
 | --- | --- |
 | GitHub Actions のバージョン | CI のログに「`actions/checkout@v4`・`actions/setup-go@v5`・`actions/setup-python@v5` は Node.js 20 を対象としており非推奨」という警告が出ている。更新する |
 | CI で使うツールの固定 | `shfmt` は `@latest`、`ansible` / `ansible-lint` / `yamllint` は版指定なし。更新で CI が突然赤くなりうる |
-| `RELEASE_PAT` の権限 | 現状は `repo` スコープの PAT。必要最小限の権限（このリポジトリに限定した PAT など）を検討する |
-| `WIKI_TOKEN` | 登録されているが、どのワークフローも使わない。Wiki への書き込みは `GITHUB_TOKEN` だけで足りる。使わない PAT は、削除してよい（この PAT は Wiki への push が 403 になった） |
+| `RELEASE_PAT` の権限 | ワークフローの前提は `repo` スコープの PAT。必要最小限の権限（このリポジトリに限定した PAT など）を検討する |
+| 版数追従の失敗の検知 | Jenkins は dispatch が GitHub に受理された時点で成功と見なし、受信側（Actions）の失敗を知らない。`RELEASE_PAT` の未登録で 4 回続けて失敗していた（2026-07-15 から 10-16）が、失敗しても Jenkins からは分からなかった。PAT が失効しても同じことが起きる。Actions の失敗通知の確認や、PAT の期限の記録を検討する |
 | MCP パッケージの固定 | `playwright` と `chrome-devtools` は `@latest`、他も版を固定していない |
 | `Makefile` の `.PHONY` | `check-dev` / `check-personal` / `ensure-not-root` が含まれず、存在しない `check` が含まれている |

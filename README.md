@@ -154,7 +154,7 @@ GitHub Actions（`pull_request` と `main` への push）で、次のチェッ�
 | `ansible-playbook --syntax-check` | Playbook の構文チェック |
 
 別に、Pleiades / FileZilla の新版を `group_vars/all.yml` に反映する PR を自動作成するワークフローがあります
-（Jenkins の Mirror Pipeline から `repository_dispatch` を受信。現状は `RELEASE_PAT` が未登録で失敗します。[KI-01](docs/known-issues.md)）。
+（Jenkins の Mirror Pipeline から `repository_dispatch` を受信。Secrets の `RELEASE_PAT` が必要です。[運用手順書](docs/operations.md)）。
 
 また、`docs/` の変更は、`main` にマージすると GitHub Wiki へ自動で反映されます（`Sync docs to Wiki`。一方向で、正本は `docs/`）。
 `docs/` を含む PR では、`Validate Wiki pages` が、Wiki 用の変換とリンクを検査します。

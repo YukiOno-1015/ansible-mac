@@ -271,10 +271,10 @@ ls -d "${TMPDIR%/}"/ansible.*askpass       # 実行後は存在しない
 
 ### TC-24 版数の自動追従
 
-`RELEASE_PAT` を登録したあとに、[operations.md](operations.md) の 4.3 のテスト用 dispatch を送ります。
+`RELEASE_PAT` が登録されていること（`gh secret list --repo YukiOno-1015/ansible-mac`）を確認して、[operations.md](operations.md) の 4.3 のテスト用 dispatch を送ります。
 
-期待: `auto/filezilla-<version>` のブランチと PR が作られ、変更が `group_vars/all.yml` の 1 行だけである。確認後は PR を閉じる。
-現状は `RELEASE_PAT` が未登録のため未達（KI-01）。
+期待: `auto/filezilla-<version>` のブランチと PR が作られ、変更が `group_vars/all.yml` の 1 行だけである。PR の CI が起動する。確認後は PR を閉じる。
+実施の記録は、6 章を参照してください。
 
 ### TC-25 秘密情報の非残存
 
@@ -332,7 +332,7 @@ mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check
 | `--check --tags git` / `dotfiles` / `mcp` | 完走 |
 | `--check` で非空パスワードを渡して `homebrew` | askpass の書き込みで失敗（KI-02） |
 | `--check` で空パスワードを渡して `macos`（`/etc/hosts`） | `sudo: a password is required` で失敗（KI-02） |
-| 更新ワークフローの実行履歴 | 4 件すべて失敗。`gh secret list` は空（KI-01） |
+| 更新ワークフローの実行履歴（`RELEASE_PAT` の登録前） | 4 件（2026-07-15、2026-08-19、2026-08-26、2026-10-16）すべて失敗。後の 2 件はログで `Input required and not supplied: token` を確認。`RELEASE_PAT` が未登録だった |
 | `main` のブランチ保護 | なし（ruleset もなし） |
 | `scripts/sync-wiki.sh` を、Wiki の複製に実行（macOS） | 11 ページを生成。元の `docs/` との差分は、リンクの宛先の変換とマーカー行だけ。2 回目は差分なし。マーカー付きの孤立ページは削除され、手書きのページは残る。リンク切れを混ぜると、何も書かずに終了コード 1 |
 | `sync-wiki.yml` の `run:` を、ローカルの bare リポジトリに実行 | clone・commit・push、差分なし時のスキップ、clone 失敗時のエラー表示を確認 |
@@ -342,7 +342,11 @@ mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check
 | 公開された Wiki の表示（ブラウザ） | サイドバーの全リンクが 200 で開く。フッター、表、Mermaid 図が表示される。マーカーの HTML コメントは見えない |
 | `Sync docs to Wiki`（手動実行、`WIKI_TOKEN` の登録後） | 成功。`WIKI_TOKEN` でも clone できる。差分がなかったため push はしていない |
 | `Sync docs to Wiki`（`docs/` の変更を `main` へマージした後、`WIKI_TOKEN` を優先する構成） | **失敗**。push が `Permission to ...wiki.git denied`（403）で拒否された。登録された PAT は、clone はできても Wiki に書き込めない。PAT を使わない構成（`GITHUB_TOKEN` のみ）に変更した |
-| Nexus の格納物と `group_vars/all.yml` の比較 | FileZilla は 3.71.1、Pleiades は 2026-09 まで格納済みだが、`group_vars/all.yml` は 3.70.6 と 2026-03 のまま。失敗した 4 回の実行は、格納時刻と一致する（KI-01） |
-| `gh secret list` | `WIKI_TOKEN` のみ。`RELEASE_PAT` は未登録（KI-01） |
+| Nexus の格納物と `group_vars/all.yml` の比較（`RELEASE_PAT` の登録前） | `group_vars/all.yml` の版より新しい FileZilla（2 版）と Pleiades（2 リリース）が、Nexus に格納済みだった。失敗した 4 回の実行は、格納時刻と一致する |
+| `gh secret list`（登録前） | `WIKI_TOKEN` のみ。`RELEASE_PAT` は未登録 |
+| `gh secret list`（オーナーが `RELEASE_PAT` を登録し、`WIKI_TOKEN` を削除した後） | `RELEASE_PAT` のみ |
+| テスト用 dispatch `update-filezilla`（取り残されていた更新の反映を兼ねる。Nexus に該当ファイルがあることを `curl -sfI` で確認してから実行） | 成功（8 秒）。`auto/filezilla-<version>` の PR #12 が作られ、差分は `group_vars/all.yml` の 1 行だけ。PR の CI が起動した |
+| テスト用 dispatch `update-pleiades`（同上） | 成功（10 秒）。`auto/pleiades-<release>-<buildDate>` の PR #13 が作られ、差分は `group_vars/all.yml` の 2 行だけ。PR の CI が起動した |
+| PR #12・#13 の `ansible-lint` | 既知の 3 件（KI-05）で失敗。違反箇所は変わらず、新しい違反はない |
 
 新規の Mac での通し実行（`make init` → `make dev` / `make personal`）は、この時点では実施していません。
