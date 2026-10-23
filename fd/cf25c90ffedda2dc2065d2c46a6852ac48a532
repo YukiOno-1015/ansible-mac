@@ -1,0 +1,35 @@
+docs/known-issues.md
+  s_11a488bc34dcd5::t_51a921c00af96f 192
+  s_11a488bc34dcd5::t_93d65a8b5616e5 40
+docs/operations.md
+  s_11a488bc34dcd5::t_1d174ea535099b 174
+  s_11a488bc34dcd5::t_a93c49dbe2fa24 161-162
+  s_11a488bc34dcd5::t_ad0554e4cdb047 242
+docs/design-decisions.md
+  s_11a488bc34dcd5::t_7098cd6316f149 179
+docs/basic-design.md
+  s_11a488bc34dcd5::t_66d7b7d135e01d 461
+docs/detailed-design.md
+  s_11a488bc34dcd5::t_c3a4b6106476cc 464
+docs/testing.md
+  s_11a488bc34dcd5::t_3f9cc78e7b35f9 344
+.github/workflows/sync-wiki.yml
+  s_11a488bc34dcd5::t_bc5a869407b00a 64,67
+  s_11a488bc34dcd5::t_7defd95fd27958 10-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fdcf25c90ffedda2dc2065d2c46a6852ac48a532",
+  "prompts": {},
+  "sessions": {
+    "s_11a488bc34dcd5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "63804f42-1fa0-4fef-ade7-9a8737fd7d5e",
+        "model": "unknown"
+      },
+      "human_author": "jqit-yukiono <jqit.yuki.ono@gmail.com>"
+    }
+  }
+}
