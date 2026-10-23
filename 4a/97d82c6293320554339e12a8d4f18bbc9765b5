@@ -1,0 +1,55 @@
+docs/operations.md
+  s_11a488bc34dcd5::t_4b58a3527ef1e7 1-151,154-155,157-241
+  s_11a488bc34dcd5::t_a52edc44f5820b 152-153,156
+docs/design-decisions.md
+  s_11a488bc34dcd5::t_fec194d174f621 147
+  s_11a488bc34dcd5::t_280aa0a0547c89 137
+  s_11a488bc34dcd5::t_37db2a779a9b63 1-46,48-76,78-136,138-146,148-169
+  s_11a488bc34dcd5::t_5506a3be04fece 47
+  s_11a488bc34dcd5::t_aa895cb92e5db5 77
+README.md
+  s_11a488bc34dcd5::t_43db13ece7a609 4,6-8,10,12,14-17,19,21,23-27,29,31-34,36,38-41,43,45-48,50,52,54-68,70-74,76,78,80-113,115,118-141,146,148-153,155-156,158,160-169,171
+docs/testing.md
+  s_11a488bc34dcd5::t_7b79d2cd292629 1-296,298-308,310-316
+  s_11a488bc34dcd5::t_6ff54b7c611dcd 297
+  s_11a488bc34dcd5::t_5133acfaf83baa 309
+docs/requirements.md
+  s_11a488bc34dcd5::t_9643bcd9117abe 1-145,147-180
+  s_11a488bc34dcd5::t_2035e1c6483142 146
+docs/README.md
+  s_11a488bc34dcd5::t_771fdd5e5d0423 59
+  s_11a488bc34dcd5::t_fed2bd192e5d47 1-58,60-75
+docs/basic-design.md
+  s_11a488bc34dcd5::t_c757df1ba89e56 1-155,157-205,207-453
+  s_11a488bc34dcd5::t_9f2a0864679627 454-455
+  s_11a488bc34dcd5::t_907b4773a3eb84 206
+  s_11a488bc34dcd5::t_d7c9652aaeb067 156
+docs/catalog.md
+  s_11a488bc34dcd5::t_6e8ba56647ab00 211
+  s_11a488bc34dcd5::t_30b850ef1a9702 1-210,212-281
+docs/detailed-design.md
+  s_11a488bc34dcd5::t_c119c417969c0e 84
+  s_11a488bc34dcd5::t_78722bd92ca3d5 199
+  s_11a488bc34dcd5::t_68c363bb630282 1-83,85-198,200-433
+docs/known-issues.md
+  s_11a488bc34dcd5::t_b6e73834516695 6
+  s_11a488bc34dcd5::t_7725c175438476 79
+  s_11a488bc34dcd5::t_8e849c265d5f9e 41
+  s_11a488bc34dcd5::t_42e95f057f53b1 1-5,7-40,42-78,80-183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4a97d82c6293320554339e12a8d4f18bbc9765b5",
+  "prompts": {},
+  "sessions": {
+    "s_11a488bc34dcd5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "63804f42-1fa0-4fef-ade7-9a8737fd7d5e",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "jqit-yukiono <jqit.yuki.ono@gmail.com>"
+    }
+  }
+}
