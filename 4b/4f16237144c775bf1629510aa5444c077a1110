@@ -1,0 +1,42 @@
+docs/detailed-design.md
+  s_11a488bc34dcd5::t_8cf32ec8382374 5
+docs/design-decisions.md
+  s_11a488bc34dcd5::t_6709867b44a231 179
+  s_11a488bc34dcd5::t_a0a40594d1cb64 5
+docs/testing.md
+  s_11a488bc34dcd5::t_47972e23483066 340-345
+  s_11a488bc34dcd5::t_b5071781e3e584 5
+docs/known-issues.md
+  s_11a488bc34dcd5::t_0046f39211cc52 192
+  s_11a488bc34dcd5::t_3f7233947169ba 40-41,46-54
+  s_11a488bc34dcd5::t_e410f6f12331aa 5
+  s_11a488bc34dcd5::t_30029741935228 55
+docs/operations.md
+  s_11a488bc34dcd5::t_29d89fdf602d99 5
+  s_11a488bc34dcd5::t_faff282d7549e6 235
+  s_11a488bc34dcd5::t_aab77645a11f14 159-163
+  s_11a488bc34dcd5::t_82a9327bafcd16 242
+  s_11a488bc34dcd5::t_ae9bef0791cfa1 174-175
+docs/basic-design.md
+  s_11a488bc34dcd5::t_ad68adbb064c8d 461
+  s_11a488bc34dcd5::t_0b8170d95969e5 5
+docs/requirements.md
+  s_11a488bc34dcd5::t_2ec4ddc6a0448d 156
+  s_11a488bc34dcd5::t_77702ed9070f5c 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4b4f16237144c775bf1629510aa5444c077a1110",
+  "prompts": {},
+  "sessions": {
+    "s_11a488bc34dcd5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "63804f42-1fa0-4fef-ade7-9a8737fd7d5e",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "jqit-yukiono <jqit.yuki.ono@gmail.com>"
+    }
+  }
+}
