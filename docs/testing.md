@@ -2,7 +2,7 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 最終更新 | 2026-10-24（`main` @ `a5e36ad` 時点） |
+| 最終更新 | 2026-10-24（`main` @ `dae2319` ＋ Wiki ミラー追加時点） |
 | 対応する要件 | [requirements.md](requirements.md) の FR-xx / NFR-xx / AC-xx |
 | 関連 | CI の設計は [basic-design.md](basic-design.md) の 8 章、既知の不具合は [known-issues.md](known-issues.md) |
 
@@ -81,6 +81,7 @@ ansible localhost -m ansible.builtin.debug -a 'msg={{ homebrew_casks | length }}
 | TC-23 | pkg 系 cask の sudo（askpass） | FR-20 |
 | TC-24 | 版数の自動追従 | FR-22 |
 | TC-25 | 秘密情報の非残存 | NFR-02 |
+| TC-26 | Wiki ミラー | FR-23 |
 
 ### TC-06 前提ツールの導入
 
@@ -284,6 +285,26 @@ ls -d "${TMPDIR%/}"/ansible.*askpass          # 存在しない
 
 期待: 実行ログにパスワードが出ない（`no_log`）。`~/.claude.json` にトークンの値が焼き込まれていない。
 
+### TC-26 Wiki ミラー
+
+変換とリンクの検査は、Wiki に書かずにローカルで確認できます。
+
+```bash
+mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check
+```
+
+期待: ページの数だけ `write: ...` が出力されて終了コード 0 になる。再実行しても、出力先に差分が出ない。
+`docs/` にリンク切れ（存在しない文書、パス付きのリンク）を入れると、`error: ...` を出して終了コード 1 になり、出力先には何も書かれない。
+同じ検査は、PR の `Validate Wiki pages` が Linux 上で行う。
+
+反映後（`main` へのマージ、または手動実行の後）は、次を確認します。
+
+- Actions の `Sync docs to Wiki` が成功している。初回は、`GITHUB_TOKEN` で push できることの確認も兼ねる
+- Wiki の `Home` が `docs/README.md` の内容で、サイドバーのリンクがすべて開く
+- Mermaid の図が描画される
+- `docs/` を変更せずに再実行しても、Wiki に新しい commit が増えない（ログに `Wiki に差分なし` と出る）
+- 手で作った Wiki ページ（マーカーなし）が残り、`docs/` から消した文書のページは Wiki からも消える
+
 ## 5. 変更の種類ごとの確認
 
 | 変更 | 最低限の確認 |
@@ -293,7 +314,8 @@ ls -d "${TMPDIR%/}"/ansible.*askpass          # 存在しない
 | プロファイルの変更 | TC-04（両プロファイル）、TC-20 |
 | MCP サーバの追加・変更 | TC-03（行長）、TC-14、TC-25 |
 | `Makefile` の変更 | TC-22、`make -n <target>` |
-| ワークフローの変更 | TC-01、TC-03、TC-24 |
+| ワークフローの変更 | TC-01、TC-03、TC-24（版数追従）、TC-26（Wiki ミラー） |
+| `docs/` の追加・改名・リンクの変更 | TC-26（PR の `Validate Wiki pages`） |
 | ドキュメントのみ | PR の Markdown プレビューで、Mermaid の描画・表・リンクを確認する |
 
 ## 6. 検証の記録
@@ -312,5 +334,9 @@ ls -d "${TMPDIR%/}"/ansible.*askpass          # 存在しない
 | `--check` で空パスワードを渡して `macos`（`/etc/hosts`） | `sudo: a password is required` で失敗（KI-02） |
 | 更新ワークフローの実行履歴 | 4 件すべて失敗。`gh secret list` は空（KI-01） |
 | `main` のブランチ保護 | なし（ruleset もなし） |
+| `scripts/sync-wiki.sh` を、Wiki の複製に実行（macOS） | 11 ページを生成。元の `docs/` との差分は、リンクの宛先の変換とマーカー行だけ。2 回目は差分なし。マーカー付きの孤立ページは削除され、手書きのページは残る。リンク切れを混ぜると、何も書かずに終了コード 1 |
+| `sync-wiki.yml` の `run:` を、ローカルの bare リポジトリに実行 | clone・commit・push、差分なし時のスキップ、clone 失敗時のエラー表示を確認 |
+| `yamllint` / `actionlint`（`sync-wiki.yml`）、`shfmt`（`sync-wiki.sh`） | 指摘なし |
 
 新規の Mac での通し実行（`make init` → `make dev` / `make personal`）は、この時点では実施していません。
+Wiki への実際の push（`GITHUB_TOKEN` の権限）は、マージ後の初回実行で確認します。

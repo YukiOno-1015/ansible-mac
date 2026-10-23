@@ -2,7 +2,7 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 最終更新 | 2026-10-24（`main` @ `a5e36ad` 時点） |
+| 最終更新 | 2026-10-24（`main` @ `dae2319` ＋ Wiki ミラー追加時点） |
 | 対象 | セットアップ、日常運用、版数の更新、変更の進め方、トラブルシューティング |
 | 関連 | 仕組みは [basic-design.md](basic-design.md)、既知の不具合は [known-issues.md](known-issues.md) |
 
@@ -140,6 +140,24 @@ git status && git diff # 秘密情報が含まれていないことを確認
 確認後、dotfiles リポジトリ側でコミットします。`import-settings` は、対象のディレクトリをコピー先で一度削除してから置き換えます。
 取り込み対象は [catalog.md](catalog.md) の 7 章にあります。
 
+### 3.7 Wiki への反映
+
+`docs/` の変更を `main` にマージすると、ワークフロー `Sync docs to Wiki` が [Wiki](https://github.com/YukiOno-1015/ansible-mac/wiki) を自動で更新します。
+**Wiki 上の編集は次の同期で上書きされる**ため、文書の修正は `docs/` に対して行ってください。
+
+- **確認**: Actions タブで `Sync docs to Wiki` の結果を見る。PR では `Validate Wiki pages` が、変換とリンクを検査する
+- **手動で反映**: Actions タブから `Sync docs to Wiki` を実行する（`workflow_dispatch`）。または下のコマンド
+- **ローカルで試す**: 空のディレクトリへ出力して、変換結果とリンク検査を確認する（Wiki には書かない）
+
+```bash
+gh workflow run sync-wiki.yml --repo YukiOno-1015/ansible-mac    # 手動で反映
+mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check   # ローカルで試す
+```
+
+`docs/` 内のリンクは、`xxx.md`、`xxx.md#見出し`、`../README.md` の形だけを使います。
+文書を追加・改名したときは、`scripts/sync-wiki.sh` の `PAGE_ORDER`（サイドバーの順序）も直します。
+前提として、Wiki の最初のページが作成済みであること。認証や失敗時の対処は、6 章のトラブルシューティングを参照してください。
+
 ## 4. 版数の更新（Pleiades / FileZilla）
 
 ### 4.1 自動（通常）
@@ -217,6 +235,9 @@ echo '{"event_type":"update-filezilla","client_payload":{"version":"<現在と�
 | CI が赤い | 既知の `yaml[line-length]` 3 件（KI-05） | ログで違反箇所が 3 件のままか確認する。増えていれば新しい違反 |
 | 更新ワークフローが `Input required and not supplied: token` で失敗 | `RELEASE_PAT` が未登録（KI-01） | 4.1 の手順で登録する |
 | 中断した後、`ansible.*askpass` というディレクトリが残っている | クリーンアップされなかった（KI-10） | `ls -d "${TMPDIR%/}"/ansible.*askpass` で確認し、内容を見て削除する |
+| `Sync docs to Wiki` が `Wiki を clone できません` で失敗 | Wiki の最初のページが未作成、またはトークンに権限がない | Web 画面で Wiki の最初のページを作る。権限エラー（403）のときは、`repo` スコープの PAT を `gh secret set WIKI_TOKEN --repo YukiOno-1015/ansible-mac` で登録して再実行する |
+| PR の `Validate Wiki pages` が `link to a missing page` / `relative file link remains` で失敗 | `docs/` 内のリンクが、Wiki に変換できない形 | リンクを `xxx.md`、`xxx.md#見出し`、`../README.md` の形にする。存在しない文書へのリンクを直す。リンク記法をコードとして書いている箇所は、書き方を変える |
+| Wiki の表示が `docs/` と違う | Wiki 上で直接編集した（次の同期で上書きされる） | `docs/` を直し、`Sync docs to Wiki` を手動で実行して戻す |
 
 ## 7. 元に戻す
 

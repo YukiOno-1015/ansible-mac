@@ -2,7 +2,7 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 最終更新 | 2026-10-24（`main` @ `a5e36ad` 時点） |
+| 最終更新 | 2026-10-24（`main` @ `dae2319` ＋ Wiki ミラー追加時点） |
 | 位置づけ | 既存の実装・PR 履歴・運用実態から**逆算して**整理した要件です。実装と食い違う場合は実装を正とし、本書を直してください |
 | 下位文書 | [basic-design.md](basic-design.md) → [detailed-design.md](detailed-design.md) |
 | 検証 | [testing.md](testing.md)（TC-xx との対応は 4 章の表） |
@@ -36,7 +36,7 @@
 | 開発環境 | Git のグローバル設定、dotfiles の取得と展開、npm グローバルパッケージと uv ツール |
 | AI ツール | AI アシスタントの GUI / CLI、Claude Code の MCP サーバ登録 |
 | 設定の取り込み | 現環境のアプリ設定を dotfiles へ取り込む（秘密情報は除く） |
-| 品質・運用 | 静的検査（CI）、Pleiades / FileZilla の版数追従 PR の自動作成 |
+| 品質・運用 | 静的検査（CI）、Pleiades / FileZilla の版数追従 PR の自動作成、`docs/` の GitHub Wiki への一方向ミラー |
 
 ### 2.2 対象外
 
@@ -64,6 +64,7 @@
 | S-5 | 現環境のアプリ設定を保存 | `make dotfiles` → `make import-settings` → 差分を確認して dotfiles にコミット |
 | S-6 | Pleiades / FileZilla の新版に追従 | Jenkins がミラー → 追従 PR が自動作成 → レビューしてマージ → 各 Mac で再実行 |
 | S-7 | MCP サーバを増やす | `mcp_servers` に追加 → `ansible-playbook site.yml --tags mcp` |
+| S-8 | 文書を更新して Wiki にも反映 | `docs/` を編集 → PR → マージ → ワークフローが Wiki を自動で更新 |
 
 ## 4. 機能要件
 
@@ -93,6 +94,7 @@
 | FR-20 | pkg ベースの cask が必要とする `sudo` を、非対話の実行で通せる | 必須 | askpass ヘルパ | TC-23 |
 | FR-21 | 静的検査（書式・lint・構文）を PR と `main` への push で自動実行する | 必須 | `ci.yml` | TC-01 〜 TC-04 |
 | FR-22 | Pleiades / FileZilla の新版を検知し、追従 PR を自動作成する | 推奨 | Jenkins Mirror Pipeline、更新ワークフロー | TC-24 |
+| FR-23 | `docs/` を GitHub Wiki へ一方向に反映する（正本は `docs/`）。PR ではリンクの検査だけを行う | 推奨 | `sync-wiki.yml`、`scripts/sync-wiki.sh` | TC-26 |
 
 ## 5. 非機能要件
 
@@ -125,6 +127,7 @@
 | C-08 | 秘密情報 | `~/.secrets.env` はリポジトリ外にあり、Vault から復元される（`personal` は自動、`dev` は手動。KI-08） |
 | C-09 | 公開 | リポジトリは公開 |
 | C-10 | 手作業 | App Store のサインイン、Vault のログイン、Pleiades / FileZilla の展開は手作業 |
+| C-11 | Wiki | 反映先の Wiki は、最初のページが作成済みであること。Wiki 上の編集は次の同期で上書きされる |
 
 ## 7. 外部インタフェース要件
 

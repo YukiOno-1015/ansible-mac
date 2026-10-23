@@ -136,9 +136,10 @@ ansible-mac/
 │   ├── dotfiles/             # dotfiles の clone/update と install
 │   └── mcp/                  # Claude Code の MCP サーバ登録
 ├── scripts/
-│   └── import-app-settings.sh  # 現環境のアプリ設定を dotfiles へ取り込み
-├── .github/workflows/        # CI と版数追従 PR の自動作成
-└── docs/                     # 要件定義・基本設計・詳細設計・運用ドキュメント
+│   ├── import-app-settings.sh  # 現環境のアプリ設定を dotfiles へ取り込み
+│   └── sync-wiki.sh            # docs/ を GitHub Wiki 用に変換
+├── .github/workflows/        # CI、版数追従 PR の自動作成、docs/ の Wiki ミラー
+└── docs/                     # 要件定義・基本設計・詳細設計・運用ドキュメント（Wiki にも反映）
 ```
 
 ## CI
@@ -155,6 +156,9 @@ GitHub Actions（`pull_request` と `main` への push）で、次のチェッ�
 別に、Pleiades / FileZilla の新版を `group_vars/all.yml` に反映する PR を自動作成するワークフローがあります
 （Jenkins の Mirror Pipeline から `repository_dispatch` を受信。現状は `RELEASE_PAT` が未登録で失敗します。[KI-01](docs/known-issues.md)）。
 
+また、`docs/` の変更は、`main` にマージすると GitHub Wiki へ自動で反映されます（`Sync docs to Wiki`。一方向で、正本は `docs/`）。
+`docs/` を含む PR では、`Validate Wiki pages` が、Wiki 用の変換とリンクを検査します。
+
 ## ドキュメント
 
 | 文書 | 内容 |
@@ -168,4 +172,4 @@ GitHub Actions（`pull_request` と `main` への push）で、次のチェッ�
 | [docs/design-decisions.md](docs/design-decisions.md) | 設計判断記録 |
 | [docs/known-issues.md](docs/known-issues.md) | 既知の課題と改善候補 |
 
-全体の索引は [docs/README.md](docs/README.md) です。
+全体の索引は [docs/README.md](docs/README.md) です。同じ内容は [GitHub Wiki](https://github.com/YukiOno-1015/ansible-mac/wiki) でも読めます（`docs/` の自動ミラー。編集は `docs/` に対して行ってください）。

@@ -2,7 +2,7 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| 最終更新 | 2026-10-24（`main` @ `a5e36ad` 時点） |
+| 最終更新 | 2026-10-24（`main` @ `dae2319` ＋ Wiki ミラー追加時点） |
 | 対応する要件 | [requirements.md](requirements.md)（FR-xx / NFR-xx） |
 | 詳細 | [detailed-design.md](detailed-design.md)（role ごとの処理・変数・ワークフロー） |
 | 設計の理由 | [design-decisions.md](design-decisions.md) |
@@ -72,8 +72,8 @@ SSH は使いません。
 | 共通変数 | `group_vars/all.yml` | 共通セット、Git・dotfiles の設定、Pleiades / FileZilla の取得元 |
 | プロファイル | `vars/dev.yml`, `vars/personal.yml` | 共通セットへの差分。`-e @vars/<profile>.yml` で読み込む |
 | 依存 collection | `requirements.yml` | `community.general`（Homebrew、`osx_defaults`、`git_config` など） |
-| スクリプト | `scripts/import-app-settings.sh` | 現環境のアプリ設定を dotfiles へ取り込む |
-| CI | `.github/workflows/*`, `.yamllint`, `.ansible-lint` | 静的検査と、版数追従 PR の自動作成 |
+| スクリプト | `scripts/import-app-settings.sh`, `scripts/sync-wiki.sh` | 現環境のアプリ設定を dotfiles へ取り込む / `docs/` を Wiki 用に変換する |
+| CI | `.github/workflows/*`, `.yamllint`, `.ansible-lint` | 静的検査、版数追従 PR の自動作成、`docs/` の Wiki ミラー |
 
 ### 2.3 ディレクトリ構成
 
@@ -99,12 +99,14 @@ ansible-mac/
 │   ├── dotfiles/             # dotfiles の clone/update と install
 │   └── mcp/                  # Claude Code の MCP サーバ登録
 ├── scripts/
-│   └── import-app-settings.sh
+│   ├── import-app-settings.sh   # アプリ設定を dotfiles へ取り込む
+│   └── sync-wiki.sh             # docs/ を Wiki 用に変換する
 ├── .github/workflows/
 │   ├── ci.yml                                   # 静的検査
-│   └── ansible-mac-update-mac-app-version.yml   # 版数追従 PR の自動作成
+│   ├── ansible-mac-update-mac-app-version.yml   # 版数追従 PR の自動作成
+│   └── sync-wiki.yml                            # docs/ の Wiki ミラー
 ├── .yamllint / .ansible-lint # lint 設定
-└── docs/                     # 本ドキュメント
+└── docs/                     # 本ドキュメント（Wiki にも反映）
 ```
 
 ### 2.4 外部システム
@@ -119,7 +121,8 @@ ansible-mac/
 | Claude Code CLI | MCP サーバの登録 | `claude mcp get` / `claude mcp add-json` |
 | npm / PyPI / GitHub | MCP サーバや CLI ツールの取得 | `npx -y`、`uvx --from git+...`、`npm install -g`、`uv tool install` |
 | Jenkins Mirror Pipeline | Pleiades / FileZilla の新版検知と Nexus へのミラー | GitHub `repository_dispatch` を受信 |
-| GitHub Actions | 静的検査、版数追従 PR の作成 | `.github/workflows/*` |
+| GitHub Actions | 静的検査、版数追従 PR の作成、Wiki ミラー | `.github/workflows/*` |
+| GitHub Wiki | `docs/` の公開（一方向のミラー） | `<repo>.wiki.git` へ `git push`（8.4） |
 
 ## 3. 実行モデル
 
@@ -441,10 +444,33 @@ Jenkins には伝わりません。`RELEASE_PAT` が未登録のため現在は�
 `main` にブランチ保護と ruleset はなく、CI は必須チェックになっていません（2026-10-24 時点）。
 ansible-lint は既知の 3 件の違反で失敗し続けています（[known-issues.md](known-issues.md) の KI-05）。
 
+### 8.4 Wiki ミラー
+
+`docs/` を GitHub Wiki へ一方向に反映します（ワークフロー `sync-wiki.yml`、変換は `scripts/sync-wiki.sh`）。
+正本は `docs/` で、Wiki 上の編集は次の同期で上書きされます。Wiki は別リポジトリで、PR レビューや CI の対象外のため、
+レビューは `docs/` への PR で行い、Wiki は読むための入口として使います。
+
+| 項目 | 内容 |
+| --- | --- |
+| トリガー | `docs/**`、`scripts/sync-wiki.sh`、ワークフロー自身の変更を `main` へ push したとき。手動実行（`workflow_dispatch`）も可 |
+| PR での検査 | 同じ変更を含む PR では `validate` ジョブが、変換とリンクの検査だけを行う（Wiki には書かない） |
+| ページの対応 | `docs/README.md` は `Home`、`docs/<name>.md` は `<name>`。`_Sidebar.md`（日本語の見出し付き）と `_Footer.md` を生成する |
+| リンクの変換 | `<name>.md` は `<name>`、`<name>.md#見出し` は `<name>#見出し`、`../README.md` はリポジトリ上の URL にする。コードブロックの中は変換しない |
+| 失敗させる条件 | 存在しないページ、またはファイルパスのリンクが残るとき。Wiki には何も書かずに終了する |
+| 管理対象の判別 | 生成したページの先頭に、マーカーの HTML コメントを入れる。`docs/` から消えたページは、マーカーがあるものだけ削除する。手で作ったページには触らない |
+| 認証 | `GITHUB_TOKEN`（`contents: write`）。権限エラーになる場合は、Secrets の `WIKI_TOKEN`（`repo` スコープの PAT）があればそれを優先して使う |
+| 前提 | Wiki の最初のページが作成済みであること。未作成だと `<repo>.wiki.git` が存在せず、clone に失敗する |
+| 同時実行 | `concurrency` で直列化し、実行中のジョブは取り消さない |
+| 差分がないとき | commit も push もしない |
+
+ページ名は、`requirements` のような ASCII の文書名です。日本語の名称は、サイドバーの見出しで補います。
+設計の理由は [design-decisions.md](design-decisions.md) の ADR-15 を参照してください。
+
 ## 9. 運用設計の要点
 
 - 反映は「YAML を編集 → `make check-*` ではなく実機で再実行」が基本です。ドライランには制約があります（KI-02）。
 - 版数の更新は、自動（Jenkins → PR）と手動（`group_vars/all.yml` を編集）の 2 通りです。
+- `docs/` の変更は、`main` にマージされると Wiki へ自動で反映されます（8.4）。
 - 変更は作業ブランチから PR を作り、squash マージします（コミットメッセージは `<type>: <日本語の説明>`）。
 - 手順とトラブルシューティングは [operations.md](operations.md) にまとめています。
 
