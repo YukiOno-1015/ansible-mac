@@ -138,8 +138,8 @@ xcode_homebrew_packages: []
 # 新版が出たら release / version を更新
 # https://nexus.sk4869.info/#browse/browse:raw-tools:eclipse
 pleiades_enabled: false
-pleiades_release: "2026-03"
-pleiades_version: "20260322"
+pleiades_release: "2026-09"
+pleiades_version: "20261016"
 pleiades_filename: "pleiades-{{ pleiades_release }}-java-mac-jre_{{ pleiades_version }}.dmg"
 pleiades_url: "https://nexus.sk4869.info/repository/raw-tools/eclipse/{{ pleiades_release }}/{{ pleiades_filename }}"
 pleiades_download_dest: "{{ ansible_env.HOME }}/Downloads/{{ pleiades_filename }}"
