@@ -1,0 +1,59 @@
+docs/basic-design.md
+  s_11a488bc34dcd5::t_46e6584727b1e1 75-76
+  s_11a488bc34dcd5::t_16df9fbac4b6c0 5
+  s_11a488bc34dcd5::t_5680543c1f713b 124-125
+  s_11a488bc34dcd5::t_5ff3afff417eb2 102-103,106-107,109
+  s_11a488bc34dcd5::t_ba3c9d1093714b 447-468,473
+docs/requirements.md
+  s_11a488bc34dcd5::t_18022a3207c12c 39
+  s_11a488bc34dcd5::t_45dc536e410ea7 5
+  s_11a488bc34dcd5::t_2e1fbfa3a83b85 130
+  s_11a488bc34dcd5::t_5e474f5da1bf55 67
+  s_11a488bc34dcd5::t_e60427d7146225 97
+docs/testing.md
+  s_11a488bc34dcd5::t_5496cf20c4b0ed 317-318
+  s_11a488bc34dcd5::t_88f2fde79408d1 288-307
+  s_11a488bc34dcd5::t_7d34b08455effa 5
+  s_11a488bc34dcd5::t_fa6ef4d75b80c2 84
+  s_11a488bc34dcd5::t_4005d486207d29 337-339,342
+scripts/sync-wiki.sh
+  s_11a488bc34dcd5::t_144a3c7929024b 1-206
+docs/operations.md
+  s_11a488bc34dcd5::t_62522b7c1fc063 143-160
+  s_11a488bc34dcd5::t_df22284d565310 238-240
+  s_11a488bc34dcd5::t_247b03a11afc45 5
+.github/workflows/sync-wiki.yml
+  s_11a488bc34dcd5::t_82206917e4d83e 1-88
+README.md
+  s_11a488bc34dcd5::t_655b81eb2498f1 159-161
+  s_11a488bc34dcd5::t_cdc69b623669e3 139-142
+  s_11a488bc34dcd5::t_2d97337b949110 175
+docs/design-decisions.md
+  s_11a488bc34dcd5::t_b408fc5e2c66b1 5
+  s_11a488bc34dcd5::t_a85a5e79336080 171-180
+  s_11a488bc34dcd5::t_bb9706391fa880 30
+docs/detailed-design.md
+  s_11a488bc34dcd5::t_2d3b1dae4e666a 356-358
+  s_11a488bc34dcd5::t_e461b3f19d8995 5
+  s_11a488bc34dcd5::t_a38abc49211abf 448-467
+  s_11a488bc34dcd5::t_9acf1adfc712ba 373-407
+docs/README.md
+  s_11a488bc34dcd5::t_c0e23b8d60330e 44-52
+  s_11a488bc34dcd5::t_0dcedf0956a9e9 84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5fbb36ca46a787edfe18240850b80f2674b009e0",
+  "prompts": {},
+  "sessions": {
+    "s_11a488bc34dcd5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "63804f42-1fa0-4fef-ade7-9a8737fd7d5e",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "jqit-yukiono <jqit.yuki.ono@gmail.com>"
+    }
+  }
+}
