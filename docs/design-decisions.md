@@ -76,7 +76,7 @@
 | 状況 | 初版は、GitHub Actions が cron で Nexus の REST API を直接ポーリングし、最新版を検出していた |
 | 決定 | 検知は Jenkins に集約する。Mirror Pipeline が新版を Nexus に置いたとき、`repository_dispatch` でこのリポジトリへ通知する |
 | 理由 | PR #2 は「検出は Jenkins に集約」としている。（推定）ミラー（取得元の監視と Nexus への格納）を行う Jenkins が新版を最初に知るため、検知を 2 か所に持たなくて済む |
-| 帰結 | Jenkins と GitHub の間に連携が増える。受信側の失敗は Jenkins に伝わらない（KI-01） |
+| 帰結 | Jenkins と GitHub の間に連携が増える。受信側の失敗は Jenkins に伝わらない。実際に、`RELEASE_PAT` の未登録による失敗が 4 回続いた（2026-10-24 に解消）。検知の改善は、[known-issues.md](known-issues.md) の改善候補に挙げている |
 | 根拠 | PR #2（`update-nexus-tools.yml` を廃案）、PR #3（Nexus 監視を Mirror Pipeline に移管） |
 
 ## ADR-06 版数の反映は PR を自動作成し、マージは手動
@@ -86,7 +86,7 @@
 | 状況 | 受信した版数を `group_vars/all.yml` に反映する必要がある |
 | 決定 | ワークフローが該当の 1〜2 行を書き換えた PR を作る。`RELEASE_PAT` で作成し、マージはオーナーが行う |
 | 理由 | `GITHUB_TOKEN` で作った PR では、追従する CI が起動しない。PAT なら起動する |
-| 帰結 | `RELEASE_PAT` が必要で、未登録だと動かない（KI-01）。初版にあった CI 通過後の自動マージは、現行のワークフローにはない |
+| 帰結 | `RELEASE_PAT` が必要で、未登録や失効のときは動かない（2026-10-24 までは未登録で失敗していた）。初版にあった CI 通過後の自動マージは、現行のワークフローにはない |
 | 根拠 | PR #2、PR #3（必要設定の節）、`6121094`（初版のコミットメッセージ） |
 
 ## ADR-07 MCP サーバを role 化し、冪等に登録し、秘密を埋め込まない

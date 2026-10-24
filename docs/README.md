@@ -82,4 +82,4 @@ flowchart LR
 | 手順の変更 | [operations.md](operations.md) |
 | ワークフローの変更 | [detailed-design.md](detailed-design.md) の 6 章、[basic-design.md](basic-design.md) の 8 章 |
 | 文書の追加・改名・削除 | `scripts/sync-wiki.sh` の `PAGE_ORDER`（Wiki のサイドバーの順序）。リンクの書き方は上の「GitHub Wiki」を参照 |
-| 不具合の発見・解消 | [known-issues.md](known-issues.md)（解消したら削除し、参照している文書も直す） |
+| 不具合の発見・解消 | [known-issues.md](known-issues.md)（解消したら削除し、参照している文書も直す。削除した ID は再利用しない） |

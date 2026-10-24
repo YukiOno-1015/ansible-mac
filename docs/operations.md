@@ -158,7 +158,7 @@ mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check   # ローカ�
 文書を追加・改名したときは、`scripts/sync-wiki.sh` の `PAGE_ORDER`（サイドバーの順序）も直します。
 前提として、Wiki の最初のページが作成済みであること。
 
-書き込みは `GITHUB_TOKEN` だけで行います（初回の同期で確認済み）。PAT は使わないため、Secrets に `WIKI_TOKEN` などがあっても無視されます。
+書き込みは `GITHUB_TOKEN` だけで行います（初回の同期で確認済み）。PAT は使わないため、Secrets に登録する必要はありません。
 かつては `WIKI_TOKEN` を優先する作りでしたが、登録された PAT で push が 403 になり、同期が失敗したため、やめました（ADR-15）。
 失敗時の対処は、6 章のトラブルシューティングを参照してください。
 
@@ -171,8 +171,9 @@ mkdir -p /tmp/wiki-check && scripts/sync-wiki.sh /tmp/wiki-check   # ローカ�
 3. PR をレビューして、マージする
 4. 各 Mac で再実行して新版を取得する（`ansible-playbook site.yml --tags filezilla`、`--tags pleiades -e @vars/dev.yml`）
 
-現在は `RELEASE_PAT` が未登録のため、手順 2 が失敗します（KI-01）。Secrets にある `WIKI_TOKEN` は、どのワークフローも使わない別のシークレットです。
-`repo` スコープの PAT を、次のコマンドで登録します。値は対話プロンプトに貼り付け、コマンドラインや会話には書きません。
+手順 2 のワークフローは、Secrets の `RELEASE_PAT`（`repo` スコープの PAT）を使います。`GITHUB_TOKEN` で作った PR では、追従する CI が起動しないためです。
+未登録のときは、最初の checkout が `Input required and not supplied: token` で失敗します。PAT が失効した場合も、ワークフローは失敗します。いずれの失敗も Jenkins には伝わりません。
+登録と更新は、次のコマンドで行います。値は対話プロンプトに貼り付け、コマンドラインや会話には書きません。
 
 ```bash
 gh secret set RELEASE_PAT --repo YukiOno-1015/ansible-mac
@@ -191,10 +192,18 @@ gh secret set RELEASE_PAT --repo YukiOno-1015/ansible-mac
 
 ### 4.3 追従の動作確認（テスト用 dispatch）
 
-`RELEASE_PAT` を登録したあと、PR が作られることを確認できます。**実際に PR が作られる**ため、確認後は閉じてください。
+`RELEASE_PAT` を登録・更新したあと、PR が作られることを確認できます。**実際に PR が作られる**ため、確認後は閉じてください。
 
 ```bash
 echo '{"event_type":"update-filezilla","client_payload":{"version":"<現在と異なる版>","jenkins":"manual-test"}}' \
+  | gh api repos/YukiOno-1015/ansible-mac/dispatches --input -
+```
+
+Nexus に新版があるのに PR が作られていないとき（通知の取りこぼしなど）は、同じ方法で最新の版を指定して dispatch すると、その版への追従 PR が作られます。この場合の PR は閉じずに、レビューしてマージします。
+Pleiades は `release` と `buildDate` を指定します。値は、Nexus の格納物（4.2 の `curl -sfI`）と合わせます。
+
+```bash
+echo '{"event_type":"update-pleiades","client_payload":{"release":"<リリース>","buildDate":"<build date>","jenkins":"manual"}}' \
   | gh api repos/YukiOno-1015/ansible-mac/dispatches --input -
 ```
 
@@ -237,7 +246,7 @@ echo '{"event_type":"update-filezilla","client_payload":{"version":"<現在と�
 | MCP サーバが認証エラー、または起動しない | `~/.secrets.env` がない（KI-08）、または Docker がない（KI-09） | 2.2 の手順で復元する。`claude mcp list` で状態を見る |
 | MCP の定義を変えたのに反映されない | 登録済みは更新しない仕様 | `claude mcp remove <name> --scope user` の後に再実行する |
 | CI が赤い | 既知の `yaml[line-length]` 3 件（KI-05） | ログで違反箇所が 3 件のままか確認する。増えていれば新しい違反 |
-| 更新ワークフローが `Input required and not supplied: token` で失敗 | `RELEASE_PAT` が未登録（KI-01） | 4.1 の手順で登録する |
+| 更新ワークフローが失敗する。未登録のときは `Input required and not supplied: token` | `RELEASE_PAT` が未登録、または失効している | 4.1 の手順で登録・更新する。取り残された更新は、4.3 の dispatch で最新の版を指定して反映する（失敗した実行の再実行は、30 日を過ぎるとできない） |
 | 中断した後、`ansible.*askpass` というディレクトリが残っている | クリーンアップされなかった（KI-10） | `ls -d "${TMPDIR%/}"/ansible.*askpass` で確認し、内容を見て削除する |
 | `Sync docs to Wiki` が `Wiki を clone できません` で失敗 | Wiki の最初のページが未作成、または `GITHUB_TOKEN` の権限が足りない | Web 画面で Wiki の最初のページを作る。`Permission ... denied`（403）のときは、ワークフローの `permissions: contents: write` と、リポジトリの Settings にある Actions の Workflow permissions を確認する |
 | PR の `Validate Wiki pages` が `link to a missing page` / `relative file link remains` で失敗 | `docs/` 内のリンクが、Wiki に変換できない形 | リンクを `xxx.md`、`xxx.md#見出し`、`../README.md` の形にする。存在しない文書へのリンクを直す。リンク記法をコードとして書いている箇所は、書き方を変える |

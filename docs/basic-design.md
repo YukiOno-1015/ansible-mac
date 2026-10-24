@@ -437,7 +437,8 @@ sequenceDiagram
 | マージ | 自動では行わない。オーナーがレビューしてマージする |
 
 Jenkins 側が dispatch に失敗してもミラー自体は成功として扱われます。逆にこのリポジトリ側で失敗しても、
-Jenkins には伝わりません。`RELEASE_PAT` が未登録のため現在は失敗する状態です（[known-issues.md](known-issues.md) の KI-01）。
+Jenkins には伝わりません。`RELEASE_PAT` が未登録の間は毎回失敗していました（2026-10-24 に登録して解消）。PAT が失効した場合も、同じ状態になります。
+失敗の検知は、[known-issues.md](known-issues.md) の改善候補に挙げています。
 
 ### 8.3 品質ゲートの現状
 
